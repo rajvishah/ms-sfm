@@ -1,0 +1,29 @@
+CC=g++
+CFLAGS=-O0 -w -c -g -Wall
+#CFLAGS=-O3 -w -c -Wall
+
+# Change the path in the following to your ANN and zlib distribution paths
+# Alternatively, copy the lib and .h files to your global lib and include paths
+LIBPATH=-L../lib/ann_1.1_char/lib/ -L../lib/zlib/lib -L/home/cvit/rajvi/local_libs/lib/ -L/home/cvit/rajvi/bundler/lib/ -L/usr/lib64 -L/usr/lib64/atlas/ -L/global/OpenBLAS/lib/
+IFLAGS=-I../lib/ann_1.1_char/include/ -I../lib/zlib/include/ -I/home/cvit/rajvi/local_libs/include/
+LIBS=-lANN_char -lz -lmatrix -lcblas -llapack -lminpack
+
+PKGCONFIGFLAG=`pkg-config --cflags --libs opencv`
+
+default: localizer
+
+localizer: localizer.o keys2a.o Reader.o Bundle.o
+	$(CC) $(IFLAGS) localizer.o keys2a.o Reader.o Bundle.o $(LIBPATH) $(PKGCONFIGFLAG)-Wall -o localizer $(LIBS)
+
+localizer.o: localizer.cpp
+	$(CC) $(CFLAGS) $(IFLAGS) localizer.cpp
+
+Reader.o: Reader.cpp Reader.h
+	$(CC) $(CFLAGS) $(IFLAGS) Reader.cpp
+
+Bundle.o: Bundle.cpp Bundle.h
+	$(CC) $(CFLAGS) $(IFLAGS) Bundle.cpp
+keys2a.o: keys2a.cpp keys2a.h
+	$(CC) $(CFLAGS) $(IFLAGS) keys2a.cpp
+clean:
+	rm -rf *o localizer
