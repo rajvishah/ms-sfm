@@ -91,6 +91,10 @@ public:
 		return k_inv[idx].data();
 	}
 
+    const Vertex* getVertex(int idx) {
+        return &vertexSet[idx];
+    }
+
 	const CamStruct* getCamSet(int idx) {
 		return &camSet[idx];
 	}

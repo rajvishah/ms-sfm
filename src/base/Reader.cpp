@@ -179,14 +179,14 @@ void BundleReader::readHeader(FILE* f) {
 	}
 }
 
-bool BundleReader::read(bundle::Bundle *myBdl, ImageListReader& imgList) {
+bool BundleReader::read(bundle::Bundle *myBdl) {
 	bdl = myBdl;
-	bool status = read(imgList);
+	bool status = read();
 	return status;
 }
 
 
-bool BundleReader::read(ImageListReader& imgList) {
+bool BundleReader::read() {
     if(bdl == NULL) {
 		cout << "\nInvalid bundle pointer";
 		return false;
@@ -216,7 +216,7 @@ bool BundleReader::read(ImageListReader& imgList) {
 	}
 
 
-	bdl->validTriangulated.resize(bdl->numImgs);
+	bdl->validTriangulated.resize(bdl->numImgs, false);
 	bdl->camSet.resize(bdl->numImgs);
 	bdl->camLocs.resize(bdl->numImgs);
 	bdl->camPos.resize(bdl->numImgs);

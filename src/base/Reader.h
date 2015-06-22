@@ -76,8 +76,8 @@ public:
 	BundleReader(string& par, bundle::Bundle *bundle);
 	BundleReader(string& par);
 	void initialize(string& par);
-	bool read(ImageListReader& imReader);
-	bool read(bundle::Bundle*, ImageListReader& imReader);
+	bool read();
+	bool read(bundle::Bundle*);
 };
 }
 #endif //__READER_H 
