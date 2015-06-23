@@ -166,6 +166,8 @@ std::vector<int> RefineCameraParameters(int num_points,
             double diff = sqrt(dx * dx + dy * dy);
 
             errors[i] = diff;
+
+            printf("\nPt': (%f %f), Pt: (%f, %f)", Vx(pr), Vy(pr), Vx(projs_curr[i]),Vy(projs_curr[i]));
             error += diff;
         }
 
@@ -176,6 +178,8 @@ std::vector<int> RefineCameraParameters(int num_points,
         double med = kth_element_copy(num_points_curr, 
             iround(0.95 * num_points_curr),
             errors);
+
+        printf("\nMedian :: %lf", med);
 
         /* We will tolerate any match with projection error < 8.0 */
         double threshold = 1.2 * NUM_STDDEV * med; /* k * stddev */
@@ -290,7 +294,7 @@ bool FindAndVerifyCamera(int num_points, v3_t *points_solve, v2_t *projs_solve,
     if (num_points >= 9) {
         r = find_projection_3x4_ransac(num_points, 
             points_solve, projs_solve, 
-            P, /* 2048 */ 4096 /* 100000 */, 
+            P, /* 2048 */ /*4096 */ 100000, 
             proj_estimation_threshold);
     }
 
@@ -408,8 +412,8 @@ bool BundleRegisterImage(localize::ImageData& data, vector< v3_t >& pt3,
     printf("[BundleRegisterImage] Initializing camera...\n");
 
     camera_params_t *camera_new = new camera_params_t;
-//    InitializeCameraParams(data, *camera_new);
-//    ClearCameraConstraints(camera_new);
+    InitializeCameraParams(data, *camera_new);
+    ClearCameraConstraints(camera_new);
 
     double Kinit[9], Rinit[9], tinit[3];
     std::vector<int> inliers, inliers_weak, outliers;
@@ -434,7 +438,7 @@ bool BundleRegisterImage(localize::ImageData& data, vector< v3_t >& pt3,
         double m_init_focal_length = 532.0; 
 
         // camera_new->f = 0.5 * (Kinit[0] + Kinit[4]);
-        if (0 /*m_fixed_focal_length*/) {
+        if (1 /*m_fixed_focal_length*/) {
             camera_new->f = m_init_focal_length;
         } else {
             if (1 /*m_use_focal_estimate*/ ) {
@@ -485,6 +489,10 @@ bool BundleRegisterImage(localize::ImageData& data, vector< v3_t >& pt3,
     for (int i = 0; i < num_points_final; i++) {
         points_final[i] = points_solve[inliers_weak[i]];
         projs_final[i] = projs_solve[inliers_weak[i]];
+
+        printf("\nPt3 : (%f %f %f), Pt2 : (%f %f)", 
+                Vx(points_final[i]), Vy(points_final[i]), Vz(points_final[i]),
+                        Vx(projs_final[i]), Vy(projs_final[i]));
     }
 
     std::vector<int> inliers_final;
@@ -492,7 +500,7 @@ bool BundleRegisterImage(localize::ImageData& data, vector< v3_t >& pt3,
     
     double m_min_proj_error_threshold = 8.0;
     double m_max_proj_error_threshold = 16.0;
-    bool m_fixed_focal_length = false;
+    bool m_fixed_focal_length = true;
 
 #if 1
     inliers_final = RefineCameraParameters(
@@ -500,8 +508,8 @@ bool BundleRegisterImage(localize::ImageData& data, vector< v3_t >& pt3,
         points_final, projs_final, 
         NULL, camera_new, 
         NULL, !m_fixed_focal_length, true,
-        0 /*m_optimize_for_fisheye*/,
-        1 /*m_estimate_distortion*/,
+        false /*m_optimize_for_fisheye*/,
+        false /*m_estimate_distortion*/,
         m_min_proj_error_threshold,
         m_max_proj_error_threshold);
 

@@ -13,34 +13,47 @@ LIBS=-lsfmdrv -limage -lsba.v1.5 -lANN_char -lz -lmatrix -lcblas -llapack -lminp
 
 PKGCONFIGFLAG=`pkg-config --cflags --libs opencv`
 
-default: localizer
+default: localizer CreateGuidedMatchPairs GuidedMatchLists 
 
-localizer: Match3Dto2D.o Localize.o ImageData.o Camera.o ImageSize.o keys2a.o Reader.o Bundle.o
-	$(CC) $(IFLAGS) Match3Dto2D.o Localize.o ImageData.o Camera.o ImageSize.o keys2a.o Reader.o Bundle.o $(LIBPATH) $(PKGCONFIGFLAG)-Wall -o localizer $(LIBS)
+localizer: Match3Dto2D.o ../base/Localize.o ../base/ImageData.o ../base/Camera.o ../base/ImageSize.o ../base/keys2a.o ../base/Reader.o ../base/Bundle.o
+	$(CC) $(IFLAGS) Match3Dto2D.o ../base/Localize.o ../base/ImageData.o ../base/Camera.o ../base/ImageSize.o ../base/keys2a.o ../base/Reader.o ../base/Bundle.o $(LIBPATH) $(PKGCONFIGFLAG)-Wall -o localizer $(LIBS)
+
+CreateGuidedMatchPairs: CreateGuidedMatchPairs.o ../base/keys2a.o ../base/Geometric.o ../base/Matcher.o ../base/Gridder.o ../base/argvparser.o ../base/MatchPairs.o ../base/Reader.o ../base/Bundle.o
+	$(CC) $(IFLAGS) CreateGuidedMatchPairs.o ../base/keys2a.o ../base/Geometric.o ../base/Matcher.o ../base/Gridder.o ../base/argvparser.o ../base/MatchPairs.o ../base/Reader.o ../base/Bundle.o $(LIBPATH) $(PKGCONFIGFLAG)-Wall -o CreateGuidedMatchPairs $(LIBS)
+
+GuidedMatchLists: GuidedMatchLists.o ../base/keys2a.o ../base/Geometric.o ../base/Matcher.o ../base/Gridder.o ../base/argvparser.o ../base/MatchPairs.o ../base/Reader.o ../base/Bundle.o
+	$(CC) $(IFLAGS) GuidedMatchLists.o ../base/keys2a.o ../base/Geometric.o ../base/Matcher.o ../base/Gridder.o ../base/argvparser.o ../base/MatchPairs.o ../base/Reader.o ../base/Bundle.o $(LIBPATH) $(PKGCONFIGFLAG)-Wall -o GuidedMatchLists $(LIBS)
+
+	
+CreateGuidedMatchPairs.o: CreateGuidedMatchPairs.cpp ../base/Reader.cpp ../base/Reader.h ../base/Bundle.cpp ../base/Bundle.h ../base/Gridder.cpp ../base/Gridder.h ../base/defs.h ../base/Geometric.cpp ../base/Geometric.h ../base/Matcher.cpp ../base/Matcher.h ../base/argvparser.cpp ../base/argvparser.h ../base/MatchPairs.cpp ../base/MatchPairs.h
+	$(CC) $(CFLAGS) $(IFLAGS) CreateGuidedMatchPairs.cpp
+
+GuidedMatchLists.o: GuidedMatchLists.cpp ../base/Reader.cpp ../base/Reader.h ../base/Bundle.cpp ../base/Bundle.h ../base/Gridder.cpp ../base/Gridder.h ../base/defs.h ../base/Geometric.cpp ../base/Geometric.h ../base/Matcher.cpp ../base/Matcher.h ../base/argvparser.cpp ../base/argvparser.h ../base/MatchPairs.cpp ../base/MatchPairs.h
+	$(CC) $(CFLAGS) $(IFLAGS) GuidedMatchLists.cpp
 
 Match3Dto2D.o:Match3Dto2D.cpp
 	$(CC) $(CFLAGS) $(IFLAGS) Match3Dto2D.cpp
 
-Localize.o: ../base/Localize.cpp ../base/Localize.h
-	$(CC) $(CFLAGS) $(IFLAGS) ../base/Localize.cpp
+#Localize.o: ../base/Localize.cpp ../base/Localize.h
+#	$(CC) $(CFLAGS) $(IFLAGS) ../base/Localize.cpp
 
-Reader.o: ../base/Reader.cpp ../base/Reader.h
-	$(CC) $(CFLAGS) $(IFLAGS) ../base/Reader.cpp
+#Reader.o: ../base/Reader.cpp ../base/Reader.h
+#	$(CC) $(CFLAGS) $(IFLAGS) ../base/Reader.cpp
 
-Bundle.o: ../base/Bundle.cpp ../base/Bundle.h
-	$(CC) $(CFLAGS) $(IFLAGS) ../base/Bundle.cpp
+#Bundle.o: ../base/Bundle.cpp ../base/Bundle.h
+#	$(CC) $(CFLAGS) $(IFLAGS) ../base/Bundle.cpp
 
-keys2a.o: ../base/keys2a.cpp ../base/keys2a.h
-	$(CC) $(CFLAGS) $(IFLAGS) ../base/keys2a.cpp
+#keys2a.o: ../base/keys2a.cpp ../base/keys2a.h
+#	$(CC) $(CFLAGS) $(IFLAGS) ../base/keys2a.cpp
 
-ImageSize.o: ../base/ImageSize.cpp ../base/ImageSize.h
-	$(CC) $(CFLAGS) $(IFLAGS) ../base/ImageSize.cpp
+#ImageSize.o: ../base/ImageSize.cpp ../base/ImageSize.h
+#	$(CC) $(CFLAGS) $(IFLAGS) ../base/ImageSize.cpp
 
-ImageData.o: ../base/ImageData.cpp ../base/ImageData.h
-	$(CC) $(CFLAGS) $(IFLAGS) ../base/ImageData.cpp
+#ImageData.o: ../base/ImageData.cpp ../base/ImageData.h
+#	$(CC) $(CFLAGS) $(IFLAGS) ../base/ImageData.cpp
 
-Camera.o: ../base/Camera.cpp ../base/Camera.h
-	$(CC) $(CFLAGS) $(IFLAGS) ../base/Camera.cpp
+#Camera.o: ../base/Camera.cpp ../base/Camera.h
+#	$(CC) $(CFLAGS) $(IFLAGS) ../base/Camera.cpp
 
 clean:
-	rm -rf *o localizer
+	rm -rf localizer CreateGuidedMatchPairs GuidedMatchLists *.o

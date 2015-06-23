@@ -15,7 +15,7 @@ MatchPairs::MatchPairs(string& baseDir, int numNearby) :
         initialized = false;
         bool s1 = imgList.read();
         bool s2 = keyList.read();
-        bool s3 = br.read(&bdl, imgList);
+        bool s3 = br.read(&bdl);
         numMaxCandidates = numNearby;
         numMinCovisible = 16;
 

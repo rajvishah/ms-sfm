@@ -76,21 +76,22 @@ int main( int argc, char* argv[]) {
         return -1;
     }
 
+
     
     vector<int> nearbyImages;
+
     while(getline(rankFile, line)) {
         istringstream str(line);
         int a, b,c;
         str >> a >> b >> c;
         if(bdl.validTriangulated[b]) {
             nearbyImages.push_back(b);
-            if(nearbyImages.size() == 20) {
+            if(nearbyImages.size() == 50) {
                 break;
             }
         }
     }
     rankFile.close();
-
     unsigned char* refKeys;
     keypt_t* refKeysInfo;
     int numRefKeys = ReadKeyFile( keyFileNames[imageIdx].c_str(), 
@@ -105,21 +106,46 @@ int main( int argc, char* argv[]) {
         int idx = nearbyImages[i];
         numFeatures[i] = ReadKeyFile( keyFileNames[idx].c_str() , &queryKeys[i] );
     }
+ 
 
-    
+    map <int, vector< pair< int, int> > > pt2TrackMap;
+    map <int, vector< pair< int, int> > >::iterator itr;
     vector< pair<int, int> > matches3D_2D;
     for(int i=0; i < nearbyImages.size(); i++) {
         printf("\nImage %d", i);
         int idx = nearbyImages[i];
         const vector< pair< int, int > >& keyPtPairs = bdl.viewArrRow(idx);
-
         for(int j=0; j < keyPtPairs.size(); j++) {
+            int keyIdx = keyPtPairs[j].first;
+            int pt3Idx = keyPtPairs[j].second;
+
+            itr = pt2TrackMap.find(pt3Idx);
+            if(itr != pt2TrackMap.end()) {
+                vector<pair<int, int> >& track = (*itr).second;
+                track.push_back(make_pair(i, keyIdx));
+            } else {
+                vector<pair< int, int > > initVec;
+                pt2TrackMap.insert(make_pair(pt3Idx, initVec));
+            }
+        }
+    }
+
+    for(itr = pt2TrackMap.begin(); itr != pt2TrackMap.end(); itr++) {
+        int pt3Idx = (*itr).first;
+        vector< pair< int, int > >& track = (*itr).second;
+        if(track.size() < 2) {
+            continue;
+        }
+
+        map< int, int > matches;
+        for(int j=0; j < track.size(); j++) {
             vector<ANNidx> indices(2);
             vector<ANNdist> dists(2);
        
-            int keyIdx = keyPtPairs[j].first;
-            int pt3Idx = keyPtPairs[j].second;
-            unsigned char* qKey = queryKeys[i] + 128*keyIdx;
+            int imgIdx = track[j].first;
+            int keyIdx = track[j].second;
+            
+            unsigned char* qKey = queryKeys[imgIdx] + 128*keyIdx;
             tree->annkPriSearch(qKey, 2, indices.data(), dists.data(), 0.0);
 
             float bestDist = (float)(dists[0]);
@@ -134,18 +160,38 @@ int main( int argc, char* argv[]) {
             indices.clear();
             dists.clear();
 
-            matches3D_2D.push_back( make_pair(pt3Idx, matchingPt) ); 
-        } 
-        printf(" found %d matches", matches3D_2D.size());
-    }
+            map< int, int >::iterator itr;
+            itr = matches.find(matchingPt);
+            if(itr != matches.end()) {
+                (*itr).second++;
+            } else {
+                matches.insert( make_pair(matchingPt, 1));
+            }
+        }
 
-    vector< pair<int, int> > finalMatches;
+        map< int, int >::iterator itr;
+        int maxCount = 0;
+        int maxIdx = -1;
+        for(itr = matches.begin(); itr != matches.end(); itr++) {
+            if((*itr).second > maxCount) {
+                maxCount = (*itr).second;
+                maxIdx = (*itr).first;
+            }
+        }
+       
+        if(maxCount > 1) {
+            printf("\nPt3 %d found Pt2 %d Match with %d consensus for %d candidates", pt3Idx, maxIdx, maxCount, matches.size());
+            matches3D_2D.push_back(make_pair(pt3Idx, maxIdx));
+        }
+
+    }
+    printf("\nFound %d matches", matches3D_2D.size()); 
+    vector< pair<int, int> > finalMatches1, finalMatches2;
+
+
     sort( matches3D_2D.begin(), matches3D_2D.end() );
 
-    vector< v3_t > pt3;
-    vector< v2_t > pt2;
-    vector< int > pt3_idx;
-    vector< int > pt2_idx;
+    
     int count = 0;
     while( count < matches3D_2D.size() ) {
         int count1 = count + 1;
@@ -157,31 +203,65 @@ int main( int argc, char* argv[]) {
             }
             count1++; 
         }
+
         if(goodPair) {
-            finalMatches.push_back(matches3D_2D[count]);
-            pt3_idx.push_back(matches3D_2D[count].first);
-            pt2_idx.push_back(matches3D_2D[count].second);
-            
-            const bundle::Vertex* vert = bdl.getVertex(matches3D_2D[count].first);
-            v3_t p3 = v3_new(vert->mPos[0], vert->mPos[1], vert->mPos[2]);
-
-            float x = refKeysInfo[matches3D_2D[count].second].x;
-            float y = refKeysInfo[matches3D_2D[count].second].y;
-            v2_t p2 = v2_new(x, y);
-
-            pt3.push_back(p3);
-            pt2.push_back(p2);
+            finalMatches1.push_back(make_pair
+                    (matches3D_2D[count].second,matches3D_2D[count].first));
         }
         count = count1;
     }
 
+    count = 0;
+    sort(finalMatches1.begin(), finalMatches1.end());
+    while( count < finalMatches1.size() ) {
+        int count1 = count + 1;
+        pair<int,int> P = finalMatches1[count];
+        bool goodPair = true;
+        while(finalMatches1[count1].first == P.first) {
+            if(finalMatches1[count1].second != P.second) {
+                goodPair = false;
+            }
+            count1++; 
+        }
 
-    printf("\nFound %d good 3D-2D correspondences\n", finalMatches.size());
+        if(goodPair) {
+            finalMatches2.push_back(make_pair(
+                    finalMatches1[count].second, 
+                    finalMatches1[count].first));
+        }
+        count = count1;
+    }
+    
+    vector< v3_t > pt3;
+    vector< v2_t > pt2;
+    vector< int > pt3_idx;
+    vector< int > pt2_idx;
+    
+    for(int count=0; count < finalMatches2.size(); count++) {
+        pt3_idx.push_back(count);
+        pt2_idx.push_back(count);
+
+        const bundle::Vertex* vert = bdl.getVertex(finalMatches2[count].first);
+        v3_t p3 = v3_new(vert->mPos[0], vert->mPos[1], vert->mPos[2]);
+
+        printf("\nIdx : %d", finalMatches2[count].second);
+
+        float x = refKeysInfo[finalMatches2[count].second].x;
+        float y = refKeysInfo[finalMatches2[count].second].y;
+
+        printf(" Point %f %f", x, y);
+        v2_t p2 = v2_new(x, y);
+
+        pt3.push_back(p3);
+        pt2.push_back(p2);
+    }
+
+
+    printf("\nFound %d good 3D-2D correspondences\n", finalMatches2.size());
 
     //Prepare Structures to Register Camera
-    
-    if(finalMatches.size() == 0) {
-        printf("\nNo matches to initiate registration, quitting");
+    if(finalMatches2.size() < 16) {
+        printf("\nNot enough matches to initiate registration, quitting");
         return 0;
     }
 

@@ -1,4 +1,11 @@
 #!/bin/bash
+# Run this script from the directory where you want the job and slurm output to be created
+# This script creates scripts to run on abacus nodes for global matching
+# binPath : path to multiscale matching binary
+# keyList : path to a list of key files
+# numCores : Usually 212 (9 * 24) if using all 9 nodes of cvit cluster
+# outputDir : Path to store the results (e.g. /lustre/cvit/rajvi/<dataset>/global_matching/)
+
 
 binPath=$1
 keyList=$2
@@ -17,9 +24,7 @@ filecounter=-1
 counter=0
 counter1=0
 
-$binPath/create_pairs_list $keyList $outputDir/pairs/ $numCores 
-
-
+$binPath/CreateGlobalMatchPairs $keyList $outputDir/pairs/ $numCores 
 
 while [ $counter -lt $numCores ] 
 do
