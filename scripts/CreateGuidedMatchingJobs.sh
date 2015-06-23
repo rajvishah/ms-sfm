@@ -17,24 +17,24 @@ BIN_PATH=$6
 
 echo "USAGE : BUNDLER_DIR BASE_DIR IMAGE_DIR NUM_NEAR NUM_LISTS BIN_PATH"
 
-RESULT_DIR=$BASE_DIR/guided_match
+RESULT_DIR=$BASE_DIR/guided_match/
+LIST_DIR=$RESULT_DIR"/matching_lists/"
+MATCHES_DIR=$RESULT_DIR"/matches_files/"
 mkdir $RESULT_DIR
+mkdir $LIST_DIR
+mkdir $MATCHES_DIR
 
 cp $BUNDLER_DIR/bundle/bundle.out $BASE_DIR/bundle.out
 cp $BUNDLER_DIR/list_tmp.txt $BASE_DIR/list_images.txt
 cp $BUNDLER_DIR/list_keys.txt $BASE_DIR/list_keys.txt
-identify $IMAGE_DIR/*.jpg | cut -d' ' -f3 | sed 's/x/ /g'> $BASE_DIR/images_dims.txt
+identify $IMAGE_DIR/*.jpg | cut -d' ' -f3 | sed 's/x/ /g'> $BASE_DIR/image_dims.txt
 
 # For the first iteration, do not pass --query_list
 # For later iterations, pass the list of newly localized images as --query_list
 
 #../bin/CreateGuidedMatchPairs --base_dir=$BASE_DIR --result_dir=$RESULT_DIR --nn_images=$NUM_NEAR --num_lists=$NUM_LISTS --query_list=$1/query_ids.txt
 
-$BIN_PATH/CreateGuidedMatchPairs --base_dir=$BASE_DIR --result_dir=$RESULT_DIR --nn_images=$NUM_NEAR --num_lists=$NUM_LISTS
-
-
-LIST_DIR=$RESULT_DIR"/matching_lists/"
-MATCHES_DIR=$RESULT_DIR"/matches_files/"
+$BIN_PATH/CreateGuidedMatchPairs --base_dir=$BASE_DIR --result_dir=$LIST_DIR --nn_images=$NUM_NEAR --num_lists=$NUM_LISTS
 
 pairListFiles=($LIST_DIR/pairs-*.txt)
 filecounter=-1
@@ -57,7 +57,9 @@ do
         echo "#SBATCH -n 24" >> $filename
         echo "#SBATCH --mem-per-cpu=3945" >> $filename
         echo "#SBATCH -t 24:00:00" >> $filename
+        echo "sbatch " $filename >> run_all.sh
     fi 
     echo "time "$BIN_PATH/GuidedMatchLists" --base_dir="$BASE_DIR" --result_dir="$MATCHES_DIR" --list_file="$file" 2>&1 &" >> $filename
     counter=`expr $counter + 1`
+    echo $counter
 done

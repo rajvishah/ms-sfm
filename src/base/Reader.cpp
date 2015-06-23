@@ -25,7 +25,7 @@ bool ImageListReader::read() {
 	ifstream imgFile(listFileName.c_str(), ifstream::in);
 	ifstream dimsFile(dimsFileName.c_str(), ifstream::in);
 	if( !imgFile.is_open() || ! dimsFile.is_open()) {
-        cout << "\nError opening file ";
+        cout << "\nError opening file (images/dimensions)";
 		return false;
 	}
 
@@ -63,6 +63,7 @@ void KeyListReader::initialize(string& baseDir){
 bool KeyListReader::read() {
 	ifstream file(keyFileName.c_str(), ifstream::in);
 	if( ! file.is_open() ) {
+        printf("\nError opening key list file");
 		return false;
 	}
 
@@ -86,6 +87,7 @@ void NSiftReader::initialize(string& baseDir) {
 bool NSiftReader::read() {
 	ifstream file(nSiftFileName.c_str(), ifstream::in);
 	if( ! file.is_open() ) {
+        printf("\nError opening num sift file");
 		return false;
 	}
 

@@ -32,6 +32,7 @@ void SetupCommandlineParser(ArgvParser& cmd, int argc, char* argv[]) {
 }
 
 int main(int argc, char* argv[]) {
+    printf("\nCreateGuidedMatchPairs : Running");
     ArgvParser cmd;
     SetupCommandlineParser(cmd, argc, argv);
 
