@@ -401,8 +401,8 @@ int main(int argc, char* argv[]) {
     int imageIdx = atoi( imageIdxStr.c_str() );
 
     char file1[1000], file2[1000], file3[1000];
-    sprintf(file1, "%s/long_tracks-%d.txt", trackDir.c_str(), imageIdx);
-    sprintf(file2, "%s/triangulated_tracks-%d.txt", trackDir.c_str(), imageIdx);
+    sprintf(file1, "%s/long-tracks-%d.txt", trackDir.c_str(), imageIdx);
+    sprintf(file2, "%s/triangulated-tracks-%d.txt", trackDir.c_str(), imageIdx);
     sprintf(file3, "%s/dbg_triangulated_tracks-%d.txt", trackDir.c_str(), imageIdx);
 
     FILE* inputFile = fopen(file1, "r");
@@ -434,7 +434,7 @@ int main(int argc, char* argv[]) {
         return -1;
     }
 
-    status = br.read(imList);
+    status = br.read();
     if(!status) {
         cout << "\nProblem reading bundle file";
         return -1;

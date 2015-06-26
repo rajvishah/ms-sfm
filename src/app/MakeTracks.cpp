@@ -42,8 +42,8 @@ int main(int argc, char* argv[]) {
     int imageIdx = atoi( imageIdxStr.c_str() );
 
     char file1[1000], file2[1000];
-    sprintf(file1, "%s/tracks-%d.txt", trackDir.c_str(), imageIdx);
-    sprintf(file2, "%s/long_tracks-%d.txt", trackDir.c_str(), imageIdx);
+    sprintf(file1, "%s/sorted-tracks-%d.txt", trackDir.c_str(), imageIdx);
+    sprintf(file2, "%s/long-tracks-%d.txt", trackDir.c_str(), imageIdx);
 
     FILE* inputFile = fopen(file1, "r");
     if(inputFile == NULL) {

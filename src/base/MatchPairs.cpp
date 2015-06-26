@@ -191,6 +191,16 @@ bool MatchPairs::matchListPairs(string& listPath ,string& resultDir) {
     }
 
     clock_t start = clock();
+    char file1[1024];
+    std::istringstream iss(listPath);
+    std::string token;
+    while(std::getline(iss, token, '/')) {;}
+    sprintf(file1, "%s/matches-%s.txt", resultDir.c_str(), token.c_str());
+    FILE* currFile = fopen(file1, "w");
+    if(currFile == NULL) {
+        printf("\nError opening file %s", file1);
+    }
+
 
     while(counter < candPairs.size()) {
         pair<int, int> p = candPairs[counter]; 
@@ -212,15 +222,6 @@ bool MatchPairs::matchListPairs(string& listPath ,string& resultDir) {
         do {
             pair<int, int> p = candPairs[counter]; 
             int refIdx = p.second;
-
-            char file1[1024], file2[1024];
-            sprintf(file1, "%s/%d-%d.txt", resultDir.c_str(), queryIdx, refIdx);
-            sprintf(file2, "%s/%d-%d.txt", resultDir.c_str(), refIdx, queryIdx);
-
-            FILE* currFile = fopen(file1, "w");
-            if(currFile == NULL) {
-                printf("\nError opening file %s", file1);
-            }
 
 
             unsigned char* refKey = keys[refIdx];

@@ -59,7 +59,8 @@ do
         echo "#SBATCH -t 24:00:00" >> $filename
         echo "sbatch " $filename >> run_all.sh
     fi 
-    echo "time "$BIN_PATH/GuidedMatchLists" --base_dir="$BASE_DIR" --result_dir="$MATCHES_DIR" --list_file="$file" 2>&1 &" >> $filename
+    #echo "time "$BIN_PATH/GuidedMatchLists" --base_dir="$BASE_DIR" --result_dir="$MATCHES_DIR" --list_file="$file" 2>&1 &" >> $filename
+    echo "time "$BIN_PATH/GuidedMatchLists" --base_dir="$BASE_DIR" --result_dir=/scratch/rajvi/pantheon_interior/ --list_file="$file" 2>&1 &" >> $filename
     counter=`expr $counter + 1`
     echo $counter
 done
