@@ -10,6 +10,13 @@
 #include <time.h>
 using namespace sfm;
 
+typedef struct pointStruct { 
+    int viewId;
+    int siftId;
+    double xcord;
+    double ycord;
+}pointstr;
+
 MatchPairs::MatchPairs(string& baseDir, int numNearby) :
     br(baseDir), imgList(baseDir), keyList(baseDir) {
         initialized = false;
@@ -115,7 +122,7 @@ bool MatchPairs::writeUniquePairs(string& resultDir, int numLists) {
                 printf("\nWriting pair file %s", filename);            
                 fclose(fp);
             }
-            sprintf(filename, "%s/pairs-%04d.txt", resultDir.c_str(), count);
+            sprintf(filename, "%s/pairs-%d.txt", resultDir.c_str(), count);
             fp = fopen(filename, "w");
             if(fp == NULL) {
                 printf("\nError opening pair file to write");
@@ -196,11 +203,17 @@ bool MatchPairs::matchListPairs(string& listPath ,string& resultDir) {
     std::string token;
     while(std::getline(iss, token, '/')) {;}
     sprintf(file1, "%s/matches-%s.txt", resultDir.c_str(), token.c_str());
+    printf("Output file :: %s/matches-%s.txt", resultDir.c_str(), token.c_str());
+
+    //FILE* currFile = fopen(file1, "wb");
     FILE* currFile = fopen(file1, "w");
     if(currFile == NULL) {
         printf("\nError opening file %s", file1);
     }
 
+
+//    vector< pair < pointstr, pointstr> > matchesList;
+//    matchesList.reserve(1000000);
 
     while(counter < candPairs.size()) {
         pair<int, int> p = candPairs[counter]; 
@@ -269,7 +282,6 @@ bool MatchPairs::matchListPairs(string& listPath ,string& resultDir) {
             printf("\n%d and %d : matches found %d", queryIdx, refIdx, numMatches);
 
             if(numMatches >= 16) {
-            //matcher.visualizeMatches(NULL);
                 printf("Writing %d matches between images %d and %d\n",
                         numMatches, queryIdx, refIdx);
                 sort(matcher.matches.begin(), matcher.matches.end());
@@ -284,17 +296,28 @@ bool MatchPairs::matchListPairs(string& listPath ,string& resultDir) {
                     float x2 = refKeyInfo[siftId2].nx;
                     float y2 = refKeyInfo[siftId2].ny;
 
+ /*
+                    pointstr p1, p2;
+                    p1.viewId = viewId1;
+                    p1.siftId = siftId1;
+                    p1.xcord = x1;
+                    p1.ycord = y1;
+                    p2.viewId = viewId2;
+                    p2.siftId = siftId2;
+                    p2.xcord = x2;
+                    p2.ycord = y2;
+
+//                    matchesList.push_back( make_pair(p1, p2) );
+*/
 
                     fprintf(currFile, "%d %d %lf %lf %d %d %lf %lf\n", viewId1, siftId1, x1, y1, viewId2, siftId2, x2, y2);
                 }
             }
-
-
-            fclose(currFile);
-        } while(candPairs[counter].first == queryIdx);
-
+            fflush(currFile);
+        } while(counter < candPairs.size() && candPairs[counter].first == queryIdx);
     }
 
+    fclose(currFile);
     clock_t end = clock();    
     printf("[KeyMatchGeoAware] Matching took %0.3fs for %s\n", 
             (end - start) / ((double) CLOCKS_PER_SEC), listPath.c_str());

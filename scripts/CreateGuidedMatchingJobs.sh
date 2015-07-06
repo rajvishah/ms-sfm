@@ -20,6 +20,9 @@ echo "USAGE : BUNDLER_DIR BASE_DIR IMAGE_DIR NUM_NEAR NUM_LISTS BIN_PATH"
 RESULT_DIR=$BASE_DIR/guided_match/
 LIST_DIR=$RESULT_DIR"/matching_lists/"
 MATCHES_DIR=$RESULT_DIR"/matches_files/"
+
+rm -r $LIST_DIR
+rm -r $MATCHES_DIR
 mkdir $RESULT_DIR
 mkdir $LIST_DIR
 mkdir $MATCHES_DIR
@@ -53,14 +56,14 @@ do
         touch $filename
         echo "#!/bin/bash" > $filename
         echo "#SBATCH -A cvit" >> $filename
-        echo "#SBATCH -p cvit" >> $filename
+        echo "#SBATCH -p long" >> $filename
         echo "#SBATCH -n 24" >> $filename
         echo "#SBATCH --mem-per-cpu=3945" >> $filename
         echo "#SBATCH -t 24:00:00" >> $filename
         echo "sbatch " $filename >> run_all.sh
     fi 
-    #echo "time "$BIN_PATH/GuidedMatchLists" --base_dir="$BASE_DIR" --result_dir="$MATCHES_DIR" --list_file="$file" 2>&1 &" >> $filename
-    echo "time "$BIN_PATH/GuidedMatchLists" --base_dir="$BASE_DIR" --result_dir=/scratch/rajvi/pantheon_interior/ --list_file="$file" 2>&1 &" >> $filename
+    echo "time "$BIN_PATH/GuidedMatchLists" --base_dir="$BASE_DIR" --result_dir="$MATCHES_DIR" --list_file="$file" 2>&1 &" >> $filename
+#    echo "time "$BIN_PATH/GuidedMatchLists" --base_dir="$BASE_DIR" --result_dir=/scratch/rajvi/pantheon_interior/ --list_file="$file" 2>&1 &" >> $filename
     counter=`expr $counter + 1`
     echo $counter
 done

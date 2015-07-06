@@ -11,7 +11,7 @@ void SetupCommandlineParser(ArgvParser& cmd, int argc, char* argv[]) {
   cmd.addErrorCode(1, "Error");
 
   cmd.setHelpOption("h", "help",""); 
-  cmd.defineOption("base_dir", "Path to base directory that stores all list files \n--list_keys.txt\n--list_images.txt\n--image_dims.txt\nnum_sifts.txt\n--bundle.out", 
+  cmd.defineOption("base_dir", "Path to base directory that stores all list files\n--list_keys.txt\n--list_images.txt\n--image_dims.txt\nnum_sifts.txt\n--bundle.out", 
       ArgvParser::OptionRequired);
 
   cmd.defineOption("result_dir", "Path to base directory that stores all matches files", 
@@ -22,8 +22,7 @@ void SetupCommandlineParser(ArgvParser& cmd, int argc, char* argv[]) {
   
   /// finally parse and handle return codes (display help etc...)
   int result = cmd.parse(argc, argv);
-  if (result != ArgvParser::NoParserError)
-  {
+  if (result != ArgvParser::NoParserError) {
     cout << cmd.parseErrorDescription(result);
     exit(-1);
   }

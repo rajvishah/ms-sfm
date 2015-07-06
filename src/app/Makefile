@@ -31,7 +31,6 @@ CreateGuidedMatchPairs.o: CreateGuidedMatchPairs.cpp ../base/Reader.cpp ../base/
 GuidedMatchLists.o: GuidedMatchLists.cpp ../base/Reader.cpp ../base/Reader.h ../base/Bundle.cpp ../base/Bundle.h ../base/Gridder.cpp ../base/Gridder.h ../base/defs.h ../base/Geometric.cpp ../base/Geometric.h ../base/Matcher.cpp ../base/Matcher.h ../base/argvparser.cpp ../base/argvparser.h ../base/MatchPairs.cpp ../base/MatchPairs.h
 	$(CC) $(CFLAGS) $(IFLAGS) GuidedMatchLists.cpp
 
-
 triangulate_tracks: TriangulateTracks.o ../base/argvparser.o ../base/Reader.o ../base/Bundle.o
 	$(CC) TriangulateTracks.o ../base/argvparser.o ../base/Reader.o ../base/Bundle.o $(LIBPATH) -Wall -o triangulate_tracks $(LIBS)
 

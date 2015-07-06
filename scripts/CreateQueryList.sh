@@ -1,6 +1,10 @@
 #!/bin/bash
+
+#This script takes as an input a bundle file and outputs a list of unlocalized images and their ids
+
 bundleFile=$1
 listFile=$2
+
 infoLine=`sed -n -e 2p $bundleFile`
 infoArray=($infoLine)
 numCameras=${infoArray[0]}

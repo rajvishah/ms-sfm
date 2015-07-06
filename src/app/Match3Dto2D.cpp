@@ -86,7 +86,7 @@ int main( int argc, char* argv[]) {
         str >> a >> b >> c;
         if(bdl.validTriangulated[b]) {
             nearbyImages.push_back(b);
-            if(nearbyImages.size() == 50) {
+            if(nearbyImages.size() == 521) {
                 break;
             }
         }
@@ -281,6 +281,8 @@ int main( int argc, char* argv[]) {
 
     bool status = BundleRegisterImage(data, pt3, pt2, pt3_idx, pt2_idx);
     if(status) {
+        printf("\nSuccessfully Registered Image %d", imageIdx);
+        fflush(stdout);
         data.WriteCamera();
         data.WriteTracks();
     }

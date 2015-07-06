@@ -1,5 +1,5 @@
-CC=g++
-#CFLAGS=-O0 -w -g -c -Wall
+CC=g++ 
+#CFLAGS=-O0 -g -w -c -Wall
 CFLAGS=-O3 -w -c -Wall
 
 # Change the path in the following to your ANN and zlib distribution paths
@@ -13,7 +13,7 @@ LIBS=-lsfmdrv -limage -lsba.v1.5 -lANN_char -lz -lmatrix -lcblas -llapack -lminp
 
 PKGCONFIGFLAG=`pkg-config --cflags --libs opencv`
 
-default: Localize.o Reader.o Bundle.o keys2a.o ImageSize.o ImageData.o Camera.o Gridder.o Matcher.o Geometric.o argvparser.o 
+default: Localize.o Reader.o Bundle.o keys2a.o ImageSize.o ImageData.o Camera.o Gridder.o Matcher.o Geometric.o argvparser.o MatchPairs.o 
 
 Localize.o: Localize.cpp Localize.h
 	$(CC) $(CFLAGS) $(IFLAGS) Localize.cpp
@@ -44,6 +44,9 @@ Matcher.o: Matcher.cpp Matcher.h
 
 Geometric.o: Geometric.cpp Geometric.h
 	$(CC) $(CFLAGS) $(IFLAGS) Geometric.cpp
+
+MatchPairs.o: MatchPairs.cpp MatchPairs.h
+	$(CC) $(CFLAGS) $(IFLAGS) MatchPairs.cpp
 
 argvparser.o: argvparser.cpp argvparser.h
 	$(CC) $(CFLAGS) $(IFLAGS) argvparser.cpp
