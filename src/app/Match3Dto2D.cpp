@@ -10,6 +10,7 @@
 #include "../base/keys2a.h"
 
 #include "vector.h"
+#include "matrix.h"
 
 #include "../base/Localize.h"
 using namespace std;
@@ -20,27 +21,32 @@ int main( int argc, char* argv[]) {
         return -1;
     }
 
-
     string imageIdxStr = argv[3];
     int imageIdx = atoi(imageIdxStr.c_str());
-    
+
     string levelStr = argv[2];
     int level = atoi(levelStr.c_str());
-    
+
     string listFileName = string(argv[1]) + "/coarse_model/list.txt";
 
     stringstream stream;
     stream << argv[1] << "/initial_matching/ranks/file-" 
-       << imageIdx << ".txt.srt";
+        << imageIdx << ".txt.srt";
     string rankFileName = stream.str();
 
     string bundlePath;
+    string camParPath;
+
     if(level==-1) {
         bundlePath = string(argv[1]) + "/coarse_model/bundle/";
     } else {
-        stringstream strm;
-        strm << argv[1] << "/dens" << setw(1) << level << "/";
+        stringstream strm, strm1;
+        strm << argv[1] << "/loc" << setw(1) << level << "/sattler_loc/";
         bundlePath = strm.str();
+        strm1 << argv[1] << "/loc" << setw(1) << level << "/sattler_loc/" << setfill('0') << setw(4) << imageIdx <<"-cam-par.txt";
+        camParPath = strm1.str();
+        cout << camParPath << endl;
+        fflush(stdout);
     }
 
     ifstream listFile(listFileName.c_str(), std::ifstream::in);
@@ -65,178 +71,117 @@ int main( int argc, char* argv[]) {
         line_count++;
     }
     listFile.close();
- 
+
     bundle::Bundle bdl;
     reader::BundleReader br(bundlePath, &bdl); 
     br.read(&bdl);
 
-    ifstream rankFile(rankFileName.c_str());
-    if(!rankFile.is_open()) {
-        cout << "\nError opening rank File";
-        return -1;
-    }
-
-
-    
-    vector<int> nearbyImages;
-
-    while(getline(rankFile, line)) {
-        istringstream str(line);
-        int a, b,c;
-        str >> a >> b >> c;
-        if(bdl.validTriangulated[b]) {
-            nearbyImages.push_back(b);
-            if(nearbyImages.size() == 521) {
-                break;
-            }
-        }
-    }
-    rankFile.close();
     unsigned char* refKeys;
     keypt_t* refKeysInfo;
     int numRefKeys = ReadKeyFile( keyFileNames[imageIdx].c_str(), 
             &refKeys, &refKeysInfo );
 
-    ANNkd_tree *tree = CreateSearchTree( numRefKeys, refKeys);
-    annMaxPtsVisit(300);
-
-    vector< unsigned char* > queryKeys( nearbyImages.size() );
-    vector< int > numFeatures( nearbyImages.size() );
-    for(int i=0; i < nearbyImages.size(); i++) {
-        int idx = nearbyImages[i];
-        numFeatures[i] = ReadKeyFile( keyFileNames[idx].c_str() , &queryKeys[i] );
+    ifstream camParFile(camParPath.c_str(), std::ifstream::in);
+    if(!camParFile.is_open()) {
+        cout << "\nError Opening Cam Par File";
+        return -1;
     }
- 
 
-    map <int, vector< pair< int, int> > > pt2TrackMap;
-    map <int, vector< pair< int, int> > >::iterator itr;
     vector< pair<int, int> > matches3D_2D;
-    for(int i=0; i < nearbyImages.size(); i++) {
-        printf("\nImage %d", i);
-        int idx = nearbyImages[i];
-        const vector< pair< int, int > >& keyPtPairs = bdl.viewArrRow(idx);
-        for(int j=0; j < keyPtPairs.size(); j++) {
-            int keyIdx = keyPtPairs[j].first;
-            int pt3Idx = keyPtPairs[j].second;
+    double P[12], K[9], R[9], C[3];
+    if(getline(camParFile, line)) {
+        stringstream strm(line);
+        int numCorr = 0;
+        strm >> numCorr;
+        for(int c=0; c < numCorr; c++) {
+            int p3Idx, keyIdx;
+            camParFile >> keyIdx >> p3Idx;
+            matches3D_2D.push_back(make_pair(p3Idx, keyIdx));
+        }
 
-            itr = pt2TrackMap.find(pt3Idx);
-            if(itr != pt2TrackMap.end()) {
-                vector<pair<int, int> >& track = (*itr).second;
-                track.push_back(make_pair(i, keyIdx));
-            } else {
-                vector<pair< int, int > > initVec;
-                pt2TrackMap.insert(make_pair(pt3Idx, initVec));
+        int row = 0;
+        for(row=0; row < 3; row++) {
+            for(int col=0; col < 4; col++) {
+                camParFile >> P[row*4 + col];
+                printf("%lf", P[row*4 + col]);
             }
+            printf("\n");
+        }
+
+        getline(camParFile, line);
+        for(row=0; row <3; row++) {
+            for(int col=0; col<3; col++) {
+                camParFile >> K[row*3 + col];
+            }
+        }
+
+        getline(camParFile, line);
+        for(row=0; row <3; row++) {
+            for(int col=0; col<3; col++) {
+                camParFile >> R[row*3 + col];
+            }
+        }
+
+        for(int col=0; col<3; col++) {
+            camParFile >> C[col];
         }
     }
 
-    for(itr = pt2TrackMap.begin(); itr != pt2TrackMap.end(); itr++) {
-        int pt3Idx = (*itr).first;
-        vector< pair< int, int > >& track = (*itr).second;
-        if(track.size() < 2) {
-            continue;
-        }
+    //printf("\n\nRotation");
+    //matrix_print(3,3,R);
+    //printf("\n\nCalibration");
+    //matrix_print(3,3,K);
+    //printf("\n\nCenter");
+    //matrix_print(3,1,C);
 
-        map< int, int > matches;
-        for(int j=0; j < track.size(); j++) {
-            vector<ANNidx> indices(2);
-            vector<ANNdist> dists(2);
-       
-            int imgIdx = track[j].first;
-            int keyIdx = track[j].second;
-            
-            unsigned char* qKey = queryKeys[imgIdx] + 128*keyIdx;
-            tree->annkPriSearch(qKey, 2, indices.data(), dists.data(), 0.0);
-
-            float bestDist = (float)(dists[0]);
-            float secondBestDist = (float)(dists[1]);
-
-            float distRatio = sqrt(bestDist/secondBestDist);
-            if(distRatio > 0.6) {
-                continue;
-            }
-
-            int matchingPt = (int)indices[0];
-            indices.clear();
-            dists.clear();
-
-            map< int, int >::iterator itr;
-            itr = matches.find(matchingPt);
-            if(itr != matches.end()) {
-                (*itr).second++;
-            } else {
-                matches.insert( make_pair(matchingPt, 1));
-            }
-        }
-
-        map< int, int >::iterator itr;
-        int maxCount = 0;
-        int maxIdx = -1;
-        for(itr = matches.begin(); itr != matches.end(); itr++) {
-            if((*itr).second > maxCount) {
-                maxCount = (*itr).second;
-                maxIdx = (*itr).first;
-            }
-        }
-       
-        if(maxCount > 1) {
-            printf("\nPt3 %d found Pt2 %d Match with %d consensus for %d candidates", pt3Idx, maxIdx, maxCount, matches.size());
-            matches3D_2D.push_back(make_pair(pt3Idx, maxIdx));
-        }
-
+    int neg = (K[0] < 0.0) + (K[4] < 0.0) + (K[8] < 0.0);
+    if(neg == 3) {
+        printf("\nAll three negative");
+    } else {
+        printf("\nNum negative %d", neg); 
     }
+
+    double KR[9], t[3], Pnew[12], tmp_t[3];
+    matrix_product(3,3,3,3,K,R,KR);
+
+//    printf("\n\nKR");
+//    matrix_print(3,3,KR);
+
+    matrix_product(3,3,3,1,R,C,t);
+    matrix_product(3,3,3,1,K,t,tmp_t);
+    matrix_scale(3,1,t,-1.0,t);
+    matrix_scale(3,1,tmp_t,-1.0,tmp_t);
+    printf("\n\nTranslation");
+    matrix_print(3,1,t);
+
+    memcpy(Pnew + 0, KR + 0, 3*sizeof(double));
+    memcpy(Pnew + 4, KR + 3, 3*sizeof(double));
+    memcpy(Pnew + 8, KR + 6, 3*sizeof(double));
+
+    Pnew[3] = tmp_t[0];
+    Pnew[7] = tmp_t[1];
+    Pnew[11] = tmp_t[2];
+
+ //   matrix_print(3,4, P);
+    matrix_print(3,4, Pnew);
+
+
+    camParFile.close();
     printf("\nFound %d matches", matches3D_2D.size()); 
-    vector< pair<int, int> > finalMatches1, finalMatches2;
+    vector< pair<int, int> >& finalMatches2 = matches3D_2D;
 
-
-    sort( matches3D_2D.begin(), matches3D_2D.end() );
-
-    
-    int count = 0;
-    while( count < matches3D_2D.size() ) {
-        int count1 = count + 1;
-        pair<int,int> P = matches3D_2D[count];
-        bool goodPair = true;
-        while(matches3D_2D[count1].first == P.first) {
-            if(matches3D_2D[count1].second != P.second) {
-                goodPair = false;
-            }
-            count1++; 
-        }
-
-        if(goodPair) {
-            finalMatches1.push_back(make_pair
-                    (matches3D_2D[count].second,matches3D_2D[count].first));
-        }
-        count = count1;
-    }
-
-    count = 0;
-    sort(finalMatches1.begin(), finalMatches1.end());
-    while( count < finalMatches1.size() ) {
-        int count1 = count + 1;
-        pair<int,int> P = finalMatches1[count];
-        bool goodPair = true;
-        while(finalMatches1[count1].first == P.first) {
-            if(finalMatches1[count1].second != P.second) {
-                goodPair = false;
-            }
-            count1++; 
-        }
-
-        if(goodPair) {
-            finalMatches2.push_back(make_pair(
-                    finalMatches1[count].second, 
-                    finalMatches1[count].first));
-        }
-        count = count1;
-    }
-    
     vector< v3_t > pt3;
     vector< v2_t > pt2;
     vector< int > pt3_idx;
     vector< int > pt2_idx;
-    
+
+    localize::ImageData data;
+    char* imageStr = strdup(imageString.c_str());
+    data.InitFromString(imageStr, ".", false);
+    data.m_licensed = true;
+    NormalizeKeyPoints(numRefKeys, refKeysInfo, 
+            data.GetWidth(), data.GetHeight());
+
     for(int count=0; count < finalMatches2.size(); count++) {
         pt3_idx.push_back(count);
         pt2_idx.push_back(count);
@@ -244,12 +189,11 @@ int main( int argc, char* argv[]) {
         const bundle::Vertex* vert = bdl.getVertex(finalMatches2[count].first);
         v3_t p3 = v3_new(vert->mPos[0], vert->mPos[1], vert->mPos[2]);
 
-        printf("\nIdx : %d", finalMatches2[count].second);
+//        printf("\nIdx : %d", finalMatches2[count].second);
 
-        float x = refKeysInfo[finalMatches2[count].second].x;
-        float y = refKeysInfo[finalMatches2[count].second].y;
+        float x = refKeysInfo[finalMatches2[count].second].nx;
+        float y = refKeysInfo[finalMatches2[count].second].ny;
 
-        printf(" Point %f %f", x, y);
         v2_t p2 = v2_new(x, y);
 
         pt3.push_back(p3);
@@ -260,17 +204,11 @@ int main( int argc, char* argv[]) {
     printf("\nFound %d good 3D-2D correspondences\n", finalMatches2.size());
 
     //Prepare Structures to Register Camera
-    if(finalMatches2.size() < 16) {
+    if(finalMatches2.size() < 8) {
         printf("\nNot enough matches to initiate registration, quitting");
         return 0;
     }
 
-    localize::ImageData data;
-    char* imageStr = strdup(imageString.c_str());
-    data.InitFromString(imageStr, ".", false);
-    data.m_licensed = true;
-    NormalizeKeyPoints(numRefKeys, refKeysInfo, 
-            data.GetWidth(), data.GetHeight());
 
     for(int i=0; i < numRefKeys; i++) {
         localize::KeypointWithDesc kpd(refKeysInfo[i].nx, refKeysInfo[i].ny, 
@@ -278,15 +216,20 @@ int main( int argc, char* argv[]) {
         data.m_keys_desc.push_back(kpd);
     } 
 
+    double Kinit[9], Rinit[9], tinit[3];
+    std::vector<int> inliers, inliers_weak, outliers;
 
-    bool status = BundleRegisterImage(data, pt3, pt2, pt3_idx, pt2_idx);
+    matrix_print(3,4,P);
+
+    bool status = BundleRegisterImage(data, pt3, pt2, pt3_idx, pt2_idx, NULL, K, R, t);
     if(status) {
         printf("\nSuccessfully Registered Image %d", imageIdx);
         fflush(stdout);
         data.WriteCamera();
         data.WriteTracks();
+    } else {
+        printf("\nFailed to register image %d", imageIdx);
+        fflush(stdout);
     }
-
-
     return -1;
 }
