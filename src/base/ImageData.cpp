@@ -114,6 +114,7 @@ void ImageData::InitFromString(char *buf, char *path, bool fisheye_by_default)
     m_init_focal = init_focal;
     m_camera.m_adjusted = false;
 
+    m_known_intrinsics = false;
     /* Extract out the user name */
     char base_name[256];
     GetBaseName(base_name);

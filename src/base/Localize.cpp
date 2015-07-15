@@ -17,6 +17,22 @@ static int compare_doubles(const void *d1, const void *d2)
     if (a > b) return 1;
     return 0;
 }
+
+void FixIntrinsicsRajvi(double *Kinit, double *Rinit, double *tinit) 
+{
+    int neg = (Kinit[0] < 0.0) + (Kinit[4] < 0.0) + (Kinit[8] < 0.0);
+    for(int i=0; i < 3; i++) {
+        int idx = i*3 + i;
+        if(Kinit[idx] < 0.0) {
+            Kinit[idx] *= -1.0f;
+            Rinit[i*3] *= -1.0f;
+            Rinit[i*3+1] *= -1.0f;
+            Rinit[i*3+2] *= -1.0f;
+            tinit[i] *= -1.0f;
+        }
+    }
+}
+
 /* Use a 180 rotation to fix up the intrinsic matrix */
 void FixIntrinsics(double *P, double *K, double *R, double *t) 
 {
@@ -134,6 +150,9 @@ std::vector<int> RefineCameraParameters(int num_points,
         inliers.push_back(i);
 
     int round = 0;
+
+    adjust_focal = false;
+    estimate_distortion = false;
 
     /* First refine with the focal length fixed */
     camera_refine(num_points_curr, points_curr, projs_curr, camera, 0, 0);    
@@ -278,8 +297,154 @@ void SetFocalConstraint(const localize::ImageData& data,
     }
 }
 
+bool CheckCheirality(v3_t p, double* R, double* t) {	
+    double pt[3] = { Vx(p), Vy(p), Vz(p) };
+    double cam[3];
+
+    pt[0] -= t[0];
+    pt[1] -= t[1];
+    pt[2] -= t[2];
+    matrix_product(3, 3, 3, 1, (double *) R, pt, cam);
+
+    // EDIT!!!
+    if (cam[2] > 0.0)
+        return false;
+    else
+        return true;
+}
+
+bool ConvertCamera(int num_points, v3_t *points_solve, v2_t *projs_solve,
+                    double* P, double *Kinit, double *Rinit, double *tinit, 
+                    double proj_estimation_threshold,
+                    double proj_estimation_threshold_weak,
+                    std::vector<int> &inliers,
+                    std::vector<int> &inliers_weak,
+                    std::vector<int> &outliers)
+{
+    matrix_scale(3, 3, Kinit, 1.0 / Kinit[8], Kinit);
+
+    printf("[FindAndVerifyCamera] Estimated intrinsics:\n");
+    matrix_print(3, 3, Kinit);
+    printf("[FindAndVerifyCamera] Estimated extrinsics:\n");
+    matrix_print(3, 3, Rinit);
+     
+    printf("[FindAndVerifyCamera] Estimated translation:\n");
+    matrix_print(1, 3, tinit);
+    
+    printf("[FindAndVerifyCamera] Estimated P:\n");
+    matrix_print(3, 4, P);
+    fflush(stdout);
+    
+    double C[3], Rinv[9];
+    matrix_invert(3,Rinit,Rinv);
+    matrix_product(3,3,3,1,Rinv,tinit,C);
+    matrix_scale(3,1,C,-1.0f,C);
+    printf("[FindAndVerifyCamera] Estimated C:\n");
+    matrix_print(3,1,C);
+
+
+    // Negating the negative entries in K
+    int neg = (Kinit[0] < 0.0) + (Kinit[4] < 0.0) + (Kinit[8] < 0.0);
+    for(int i=0; i < 3; i++) {
+        int idx = i*3 + i;
+        if(Kinit[idx] < 0.0) {
+            Kinit[i*3] *= -1.0f;
+            Kinit[(i+1)*3] *= -1.0f;
+            Kinit[(i+2)*3] *= -1.0f;
+            Rinit[i*3] *= -1.0f;
+            Rinit[i*3+1] *= -1.0f;
+            Rinit[i*3+2] *= -1.0f;
+        }
+    }
+
+    double Rigid[12] = 
+    { Rinit[0], Rinit[1], Rinit[2], tinit[0],
+    Rinit[3], Rinit[4], Rinit[5], tinit[1],
+    Rinit[6], Rinit[7], Rinit[8], tinit[2] };
+    
+    printf("[FindAndVerifyCamera] Estimated Pdash:\n");
+    double tmp[12];
+    matrix_product(3,3,3,4,Kinit,Rigid,tmp);
+    matrix_print(3, 4, tmp);
+
+    double KR[9];
+    matrix_product(3,3,3,3,Kinit,Rinit,KR);
+    
+    double det = KR[0] * (KR[4]*KR[8] - KR[5]*KR[7]) -
+        KR[1] * (KR[3]*KR[8] - KR[5]*KR[7]) + 
+        KR[2] * (KR[3]*KR[7] - KR[4]*KR[6]);
+
+    double M3[3] = {KR[6], KR[7], KR[8]};
+    matrix_scale(3,1,M3,det,M3);
+
+
+    /* Check cheirality constraint */
+    printf("[FindAndVerifyCamera] Checking consistency...\n");
+    int num_behind = 0;
+    for (int j = 0; j < num_points; j++) {
+        double p[4] = { Vx(points_solve[j]), 
+            Vy(points_solve[j]),
+            Vz(points_solve[j]), 1.0 };
+        double q[3], q2[3];
+
+        matrix_product(3, 4, 4, 1, Rigid, p, q);
+        matrix_product331(Kinit, q, q2);
+        double pimg[2] = { q2[0] / q2[2], q2[1] / q2[2] };  // Negative in original
+
+        printf("\n%lf %lf , %lf %lf", pimg[0], pimg[1], Vx(projs_solve[j]), Vy(projs_solve[j]));
+        double diff = 
+            (pimg[0] - Vx(projs_solve[j])) * 
+            (pimg[0] - Vx(projs_solve[j])) + 
+            (pimg[1] - Vy(projs_solve[j])) * 
+            (pimg[1] - Vy(projs_solve[j]));
+
+        diff = sqrt(diff);
+
+        if (diff < proj_estimation_threshold)
+            inliers.push_back(j);
+
+        if (diff < proj_estimation_threshold_weak) {
+            inliers_weak.push_back(j);
+        } else {
+            printf("[FindAndVerifyCamera] Removing point [%d] "
+                "(reproj. error = %0.3f)\n", j, diff);
+            outliers.push_back(j);
+        }
+
+        // EDIT!!! Original Cheirality Test
+//        if (q[2] > 0.0)
+//            num_behind++;  /* Cheirality constraint violated */
+
+        // One that I understand?
+//        if(!CheckCheirality(v3_new(p[0], p[1], p[2]), Rinit, tinit)) {
+//            num_behind++;
+//        };
+        
+        //Verbatim Hartley and Zisserman pg 149
+        double normP3[3] = {p[0] - C[0], p[1] - C[1], p[2] - C[2]};
+        double dir = M3[0]*normP3[0] + M3[1]*normP3[1] + M3[2]*normP3[2];
+        if(dir > 0.0) {
+            num_behind++;
+        }
+
+        
+    }
+
+    if (num_behind >= 0.9 * num_points) {
+        printf("[FindAndVerifyCamera] Error: camera is pointing "
+            "away from scene %d/%d points\n", num_behind, num_points);
+        return false;
+    }
+
+    if(inliers_weak.size() < 0.8*num_points) {
+        printf("\nRemoved too many points");
+    }
+
+    return true;
+}
+
 bool FindAndVerifyCamera(int num_points, v3_t *points_solve, v2_t *projs_solve,
-                         int *idxs_solve,
+                         int *idxs_solve, double* P,
                          double *K, double *R, double *t, 
                          double proj_estimation_threshold,
                          double proj_estimation_threshold_weak,
@@ -288,14 +453,14 @@ bool FindAndVerifyCamera(int num_points, v3_t *points_solve, v2_t *projs_solve,
                          std::vector<int> &outliers)
 {
     /* First, find the projection matrix */
-    double P[12];
-    int r = -1;
-
-    if (num_points >= 9) {
+    int r = -1; 
+    if (num_points >= 9 && P == NULL) {
+        P = new double[12];
         r = find_projection_3x4_ransac(num_points, 
             points_solve, projs_solve, 
-            P, /* 2048 */ /*4096 */ 100000, 
-            proj_estimation_threshold);
+            P, 4096, proj_estimation_threshold);
+    } else {
+        r = num_points;
     }
 
     if (r == -1) {
@@ -318,13 +483,68 @@ bool FindAndVerifyCamera(int num_points, v3_t *points_solve, v2_t *projs_solve,
     dgerqf_driver(3, 3, KRinit, Kinit, Rinit);	    
 
     /* We want our intrinsics to have a certain form */
-    FixIntrinsics(P, Kinit, Rinit, tinit);
+    //FixIntrinsics(P, Kinit, Rinit, tinit);
     matrix_scale(3, 3, Kinit, 1.0 / Kinit[8], Kinit);
 
     printf("[FindAndVerifyCamera] Estimated intrinsics:\n");
     matrix_print(3, 3, Kinit);
     printf("[FindAndVerifyCamera] Estimated extrinsics:\n");
     matrix_print(3, 3, Rinit);
+     
+    int neg = (Kinit[0] < 0.0) + (Kinit[4] < 0.0) + (Kinit[8] < 0.0);
+    if(neg == 1) {
+        printf("\nOne negative");
+        if(Kinit[0] < 0.0) {
+            Kinit[0] = -Kinit[0];
+            R[0]*=-1.0;
+            R[1]*=-1.0;
+            R[2]*=-1.0;
+        } else if(Kinit[4] < 0.0) {
+            Kinit[4] = -Kinit[4];
+            R[3]*=-1.0;
+            R[4]*=-1.0;
+            R[5]*=-1.0; 
+        } else {
+            Kinit[8] = -Kinit[8];
+            R[6]*=-1.0;
+            R[7]*=-1.0;
+            R[8]*=-1.0;  
+        }
+    } else if(neg == 3) {
+        printf("\nAll negative");
+        matrix_scale(3,3,Kinit,-1,Kinit);  
+    } else if(neg == 2) {
+        printf("\nTwo negative");
+        /* Now deal with case of even parity */
+        double fix[9];
+        matrix_ident(3, fix);
+        double tmp[9];
+
+        if (Kinit[0] < 0.0 && Kinit[4] < 0.0) {
+            fix[0] = -1.0;
+            fix[4] = -1.0;
+        } else if (Kinit[0] < 0.0) {
+            fix[0] = -1.0;
+            fix[8] = -1.0;
+        } else if (Kinit[4] < 0.0) {
+            fix[4] = -1.0;
+            fix[8] = -1.0;
+        }
+        matrix_product(3, 3, 3, 3, Kinit, fix, tmp);
+        memcpy(Kinit, tmp, sizeof(double) * 3 * 3);
+    }
+    
+    /*
+    double Kinv[9], tmp2[12];
+    matrix_invert(3, Kinit, Kinv);
+    matrix_product(3, 3, 3, 4, Kinv, P, tmp2);
+    tinit[0] = tmp2[3];
+    tinit[1] = tmp2[7];
+    tinit[2] = tmp2[11];
+    */
+    
+    
+    printf("[FindAndVerifyCamera] Estimated translation:\n");
     matrix_print(1, 3, tinit);
     fflush(stdout);
 
@@ -345,8 +565,10 @@ bool FindAndVerifyCamera(int num_points, v3_t *points_solve, v2_t *projs_solve,
 
         matrix_product(3, 4, 4, 1, Rigid, p, q);
         matrix_product331(Kinit, q, q2);
+        //double pimg[2] = { q2[0] / q2[2], q2[1] / q2[2] };  // Negative in original
+        double pimg[2] = { q2[0] / q2[2], q2[1] / q2[2] };  // Negative in original
 
-        double pimg[2] = { -q2[0] / q2[2], -q2[1] / q2[2] };
+        printf("\n%lf %lf , %lf %lf", pimg[0], pimg[1], Vx(projs_solve[j]), Vy(projs_solve[j]));
         double diff = 
             (pimg[0] - Vx(projs_solve[j])) * 
             (pimg[0] - Vx(projs_solve[j])) + 
@@ -366,9 +588,14 @@ bool FindAndVerifyCamera(int num_points, v3_t *points_solve, v2_t *projs_solve,
             outliers.push_back(j);
         }
 
-        // EDIT!!!
+        // EDIT!!! Original Cheirality Test
         if (q[2] > 0.0)
             num_behind++;  /* Cheirality constraint violated */
+
+        // One that I understand?
+    //    if(!CheckCheirality(v3_new(p[0], p[1], p[2]), Rinit, tinit)) {
+//            num_behind++;
+//        };
     }
 
     if (num_behind >= 0.9 * num_points) {
@@ -396,7 +623,8 @@ bool FindAndVerifyCamera(int num_points, v3_t *points_solve, v2_t *projs_solve,
  * Function modified from bundler/src/Bundle.cpp */
 
 bool BundleRegisterImage(localize::ImageData& data, vector< v3_t >& pt3, 
-        vector<v2_t>& pt2, vector< int >& pt3_idx, vector<int>& pt2_idx) {
+        vector<v2_t>& pt2, vector< int >& pt3_idx, vector<int>& pt2_idx, 
+        double* P, double* Kinit, double* Rinit, double* tinit) {
     
     clock_t start  = clock();
     /* **** Connect the new camera to any existing points **** */
@@ -410,127 +638,76 @@ bool BundleRegisterImage(localize::ImageData& data, vector< v3_t >& pt3,
 
     /* **** Solve for the camera position **** */
     printf("[BundleRegisterImage] Initializing camera...\n");
+    FixIntrinsicsRajvi(Kinit,Rinit,tinit);
 
     camera_params_t *camera_new = new camera_params_t;
     InitializeCameraParams(data, *camera_new);
     ClearCameraConstraints(camera_new);
 
-    double Kinit[9], Rinit[9], tinit[3];
-    std::vector<int> inliers, inliers_weak, outliers;
-    bool success = 
-        FindAndVerifyCamera(num_pts_solve, points_solve, projs_solve,
-        idxs_solve, Kinit, Rinit, tinit, 
-        /*m_projection_estimation_threshold*/ 4.0, 
-        2.0 * 4.0 /* m_projection_estimation_threshold*/,
-        inliers, inliers_weak, outliers);
+    /* Set up the new camera */
+    memcpy(camera_new->R, Rinit, 9 * sizeof(double));
+    matrix_transpose_product(3, 3, 3, 1, Rinit, tinit, camera_new->t);
+    matrix_scale(3, 1, camera_new->t, -1.0, camera_new->t);
 
+    camera_new->f = 0.5 * (abs(Kinit[0]) + abs(Kinit[4]));
+    if (data.m_has_init_focal) {
+        double ratio;
+        double init = data.m_init_focal;
+        double obs = 0.5 * (abs(Kinit[0]) + abs(Kinit[4]));
 
-    ClearCameraConstraints(camera_new);
+        printf("[BundleRegisterImage] "
+                "Camera has initial focal length of %0.3f\n", init);
 
-    if (success) {
-        /* Set up the new camera */
-        memcpy(camera_new->R, Rinit, 9 * sizeof(double));
+        if (init > obs) ratio = init / obs;
+        else            ratio = obs / init;
 
-        matrix_transpose_product(3, 3, 3, 1, Rinit, tinit, camera_new->t);
-        matrix_scale(3, 1, camera_new->t, -1.0, camera_new->t);
-
-
-        double m_init_focal_length = 532.0; 
-
-        // camera_new->f = 0.5 * (Kinit[0] + Kinit[4]);
-        if (1 /*m_fixed_focal_length*/) {
-            camera_new->f = m_init_focal_length;
+        if (ratio < 1.4) {
+            camera_new->f = init;
+            SetFocalConstraint(data, camera_new);
         } else {
-            if (1 /*m_use_focal_estimate*/ ) {
-                if (data.m_has_init_focal) {
-                    double ratio;
-                    double init = data.m_init_focal;
-                    double obs = 0.5 * (Kinit[0] + Kinit[4]);
-
-                    printf("[BundleRegisterImage] "
-                        "Camera has initial focal length of %0.3f\n", init);
-
-                    if (init > obs) ratio = init / obs;
-                    else            ratio = obs / init;
-
-                    if (ratio < 1.4 || false /*m_trust_focal_estimate*/) {
-                        camera_new->f = init;
-                        if (1.0 /* m_constrain_focal*/)
-                            SetFocalConstraint(data, camera_new);
-                    } else {
-                        printf("[BundleRegisterImage] "
-                            "Estimated focal length of %0.3f "
-                            "is too different\n", obs);
-
-                        camera_new->f = 0.5 * (Kinit[0] + Kinit[4]);   
-                    }
-                } else {
-                    camera_new->f = 0.5 * (Kinit[0] + Kinit[4]);
-                }
-            } else if (data.m_has_init_focal) {
-                camera_new->f = data.m_init_focal;
-            } else {
-                camera_new->f = m_init_focal_length; // cameras[parent_idx].f;
-            }
+            printf("[BundleRegisterImage] "
+                    "Estimated focal length of %0.3f "
+                    "is too different\n", obs);
+            camera_new->f = 0.5 * (abs(Kinit[0]) + abs(Kinit[4]));   
         }
     } else {
-        delete camera_new;
-        return false;
+        printf("\nNo EXIF Focal");
+        camera_new->f = 0.5 * (abs(Kinit[0]) + abs(Kinit[4]));
     }
 
     /* **** Finally, start the bundle adjustment **** */
     printf("[BundleRegisterImage] Adjusting [%d,%d]...\n",
-        (int) inliers.size(), (int) inliers_weak.size());
+        (int) pt3.size(), (int) pt3.size());
 
-    int num_points_final = (int) inliers_weak.size();
-    v3_t *points_final = new v3_t[num_points_final];
-    v2_t *projs_final = new v2_t[num_points_final];
+    int num_points_final = (int) pt3.size();
+    v3_t *points_final = pt3.data();;
+    v2_t *projs_final = pt2.data();
 
-    for (int i = 0; i < num_points_final; i++) {
-        points_final[i] = points_solve[inliers_weak[i]];
-        projs_final[i] = projs_solve[inliers_weak[i]];
 
-        printf("\nPt3 : (%f %f %f), Pt2 : (%f %f)", 
-                Vx(points_final[i]), Vy(points_final[i]), Vz(points_final[i]),
-                        Vx(projs_final[i]), Vy(projs_final[i]));
-    }
-
-    std::vector<int> inliers_final;
-
-    
+    std::vector<int> inliers_final;    
     double m_min_proj_error_threshold = 8.0;
     double m_max_proj_error_threshold = 16.0;
     bool m_fixed_focal_length = true;
-
-#if 1
     inliers_final = RefineCameraParameters(
             num_points_final, 
         points_final, projs_final, 
         NULL, camera_new, 
-        NULL, !m_fixed_focal_length, true,
+        NULL, false, true,
         false /*m_optimize_for_fisheye*/,
         false /*m_estimate_distortion*/,
         m_min_proj_error_threshold,
         m_max_proj_error_threshold);
 
-#else
-    inliers = 
-        RefineCameraAndPoints(data, num_points_final,
-        points_final, projs_final, idxs_final, 
-        cameras, added_order, pt_views, &camera_new, 
-        true);
-#endif
-
     int num_inliers = (int) inliers_final.size();
 
-    success = false;
-#define MIN_INLIERS_ADD_IMAGE 16
+    bool success = false;
+#define MIN_INLIERS_ADD_IMAGE 12
     //@aditya DANGER!!!
-    /* if (num_inliers < 0.5 * num_points_final) {
+    if (num_inliers < 0.5 * num_points_final) {
         printf("[BundleRegisterImage] "
             "Threw out too many outliers [%d / %d]\n", 
             num_inliers, num_points_final);
-    } else*/ if (num_inliers >= MIN_INLIERS_ADD_IMAGE) {
+    } else if (num_inliers >= MIN_INLIERS_ADD_IMAGE) {
         printf("[BundleRegisterImage] Final camera parameters:\n");
         printf("f: %0.3f\n", camera_new->f);
         printf("R:\n");
@@ -539,19 +716,6 @@ bool BundleRegisterImage(localize::ImageData& data, vector< v3_t >& pt3,
         matrix_print(1, 3, camera_new->t);
 
         fflush(stdout);
-
-#if 0
-        data.LoadImage();
-
-        for (int i = 0; i < num_points_final; i++) {
-            img_draw_pt(data.m_img, 
-                iround(Vx(projs_final[i]) + 0.5 * data.GetWidth()),
-                iround(Vy(projs_final[i]) + 0.5 * data.GetHeight()), 
-                6, 0xff, 0x0, 0x0);
-        }
-
-        img_write_bmp_file(data.m_img, "projs.bmp");
-#endif
 
         data.m_camera.m_adjusted = true;
 
@@ -573,8 +737,8 @@ bool BundleRegisterImage(localize::ImageData& data, vector< v3_t >& pt3,
         }
 
         for (int i = 0; i < num_inliers_final; i++) {
-            int key_idx = keys_solve[inliers_weak[inliers_final[i]]];
-            int pt_idx = idxs_solve[inliers_weak[inliers_final[i]]];
+            int key_idx = keys_solve[inliers_final[i]];
+            int pt_idx = idxs_solve[inliers_final[i]];
 
             printf("(k,p)[%d] = %d, %d\n", i, key_idx, pt_idx);
             double proj[2];
@@ -593,9 +757,6 @@ bool BundleRegisterImage(localize::ImageData& data, vector< v3_t >& pt3,
     }
 
     delete camera_new;
-
-    delete [] points_final;
-    delete [] projs_final;
 
     clock_t end = clock();
 

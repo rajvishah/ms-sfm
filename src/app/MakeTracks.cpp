@@ -70,39 +70,8 @@ int main(int argc, char* argv[]) {
 
     vector< pair< pointstr, pointstr> > matchPairList;
     vector< pair< int, int > > keyToListMap;
-    /*
-    FILE* inputFile = fopen(matchesFilePath.c_str(), "rb");
-    if(inputFile == NULL) {
-        printf("\nInput file could not be opened");
-        return -1;
-    }
-    fseek(inputFile, 0, SEEK_END);
-    long long fileSize = ftell(inputFile);
-    rewind(inputFile);
 
-    long int unitSize = sizeof(pair< pointstr, pointstr> );
-    int numUnits = fileSize/unitSize;
-    
-
-    for(int i=0; i < numUnits; i++) {
-        pair< pointstr, pointstr > matchPair;
-        fread(matchPair.data(), unitSize, 1, inputFile);
-        
-        pointstr p1 = matchPair.first;
-        pointstr p2 = matchPair.second;
-
-        if(p1.siftId == imageIdx) {
-            matchPairList.push_back(make_pair(p1,p2));
-            int listId = matchPairList.size();
-            keyToListMap.push_back( make_pair(p1.siftId, listId) ); 
-        } else if(p2.siftId == imageIdx) {
-            matchPairList.push_back(make_pair(p2,p1)); 
-            int listId = matchPairList.size();
-            keyToListMap.push_back( make_pair(p2.siftId, listId) ); 
-        }
-    }*/
-
-
+    clock_t start1 = clock();    
     string line;
     while(getline(inputFile,line)) {
         int imId1, imId2, siftId1, siftId2;
@@ -127,18 +96,22 @@ int main(int argc, char* argv[]) {
             
             if(imId2 == imageIdx) {
                 matchPairList.push_back( make_pair(p2, p1) );
-                int listId = matchPairList.size();
+                int listId = matchPairList.size() - 1;
                 keyToListMap.push_back( make_pair(siftId2, listId) ); 
             } else {
                 matchPairList.push_back( make_pair(p1, p2) ); 
-                int listId = matchPairList.size();
+                int listId = matchPairList.size() - 1;
                 keyToListMap.push_back( make_pair(siftId1, listId) ); 
             }
         } 
     }
+    clock_t end1 = clock();    
 
+    clock_t start2 = clock();
     sort( keyToListMap.begin(), keyToListMap.end() );
+    clock_t end2 = clock();
 
+    clock_t start3 = clock();
     vector< vector< pointstr> > tracks;  
     int counter = 0;
     while(counter < keyToListMap.size() ) {
@@ -163,6 +136,9 @@ int main(int argc, char* argv[]) {
         counter = counter + incr;
     }
     printf("\nFound %d tracks", tracks.size());
+    clock_t end3 = clock();
+
+    clock_t start4 = clock();
 
     for(int i=0; i < tracks.size(); i++) {
         fprintf(outputFile, "%d", tracks[i].size());
@@ -175,5 +151,14 @@ int main(int argc, char* argv[]) {
 
     fclose(outputFile);
     printf("\nFinished writing %d tracks for %d image", tracks.size(), imageIdx);
+    clock_t end4 = clock();
+    printf("[MakeTracks] Reading file took %0.3fs\n", 
+            (end1 - start1) / ((double) CLOCKS_PER_SEC));
+    printf("[MakeTracks] Sorting tracks took %0.3fs\n", 
+            (end2 - start2) / ((double) CLOCKS_PER_SEC));
+    printf("[MakeTracks] Finding tracks took %0.3fs\n", 
+            (end3 - start3) / ((double) CLOCKS_PER_SEC));
+    printf("[MakeTracks] Writing file took %0.3fs\n", 
+            (end4 - start4) / ((double) CLOCKS_PER_SEC));
     return 0;
 }
