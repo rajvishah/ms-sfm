@@ -437,7 +437,7 @@ int main(int argc, char* argv[]) {
         }
 
         end = clock();    
-        printf("[KeyMatchGeoAware] Matching took %0.3fs\n", 
+        printf("[KeyMatchGlobal] Matching took %0.3fs\n", 
                 (end - start) / ((double) CLOCKS_PER_SEC));
         fflush(stdout);
     }

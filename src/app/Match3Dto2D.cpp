@@ -37,6 +37,9 @@ int main( int argc, char* argv[]) {
     string bundlePath;
     string camParPath;
 
+    string camOutPath;
+    string trackOutPath;
+
     if(level==-1) {
         bundlePath = string(argv[1]) + "/coarse_model/bundle/";
     } else {
@@ -46,6 +49,16 @@ int main( int argc, char* argv[]) {
         strm1 << argv[1] << "/loc" << setw(1) << level << "/sattler_loc/" << setfill('0') << setw(4) << imageIdx <<"-cam-par.txt";
         camParPath = strm1.str();
         cout << camParPath << endl;
+   
+        strm1.str("");
+        strm1 << argv[1] << "/loc" << setw(1) << level << "/sattler_loc/" << setfill('0') << setw(4) << imageIdx <<"-cam-bdl.txt";
+        camOutPath = strm1.str();
+        cout << camOutPath << endl;
+        
+        strm1.str("");
+        strm1 << argv[1] << "/loc" << setw(1) << level << "/sattler_loc/" << setfill('0') << setw(4) << imageIdx <<"-trk-bdl.txt";
+        trackOutPath = strm1.str();
+        cout << trackOutPath << endl;
         fflush(stdout);
     }
 
@@ -221,12 +234,55 @@ int main( int argc, char* argv[]) {
 
     matrix_print(3,4,P);
 
-    bool status = BundleRegisterImage(data, pt3, pt2, pt3_idx, pt2_idx, NULL, K, R, t);
+    
+    vector<int> inliers_final;
+    bool status = BundleRegisterImage(data, pt3, pt2, pt3_idx, pt2_idx, NULL, K, R, t, inliers_final);
     if(status) {
         printf("\nSuccessfully Registered Image %d", imageIdx);
         fflush(stdout);
-        data.WriteCamera();
-        data.WriteTracks();
+
+        FILE* camOutFile = fopen(camOutPath.c_str(), "w");
+        if(camOutFile == NULL) {
+            cout << "\nError Opening Cam Out File";
+            return -1;
+        }
+
+        FILE* trackOutFile = fopen(trackOutPath.c_str(),"w");
+        if(trackOutFile == NULL) {
+            cout << "\nError Opening Track Out File";
+            return -1;
+        }
+
+        fprintf(camOutFile, "%0.8e %0.8e %0.8e\n", 
+                data.m_camera.m_focal, 
+                data.m_camera.m_k[0], data.m_camera.m_k[1]);
+        fprintf(camOutFile, "%0.8e %0.8e %0.8e\n", 
+                data.m_camera.m_R[0], data.m_camera.m_R[1], 
+                data.m_camera.m_R[2]);
+        fprintf(camOutFile, "%0.8e %0.8e %0.8e\n", 
+                data.m_camera.m_R[3], data.m_camera.m_R[4], 
+                data.m_camera.m_R[5]);
+        fprintf(camOutFile, "%0.8e %0.8e %0.8e\n", 
+                data.m_camera.m_R[6], data.m_camera.m_R[7], 
+                data.m_camera.m_R[8]);
+        fprintf(camOutFile, "%0.8e %0.8e %0.8e\n", 
+                data.m_camera.m_t[0], 
+                data.m_camera.m_t[1], data.m_camera.m_t[2]);
+
+
+        for(int i=0; i < inliers_final.size(); i++) {
+            int idx = inliers_final[i];
+            pair<int,int> p = finalMatches2[idx];
+
+            float x = refKeysInfo[p.second].nx; 
+            float y = refKeysInfo[p.second].ny; 
+
+            fprintf(trackOutFile, "%d %d %d %f %f\n", 
+                    p.first, imageIdx, p.second, x, y);
+        }
+        fclose(camOutFile);
+        fclose(trackOutFile);
+
     } else {
         printf("\nFailed to register image %d", imageIdx);
         fflush(stdout);

@@ -377,6 +377,7 @@ void SetupCommandlineParser(ArgvParser& cmd, int argc, char* argv[]) {
 
     cmd.setHelpOption("h", "help",""); 
     cmd.defineOption("bundler_path", "Bundler Path", ArgvParser::OptionRequired);
+    cmd.defineOption("mode", "Mode", ArgvParser::NoOptionAttribute);
     cmd.defineOption("tracks_dir", "Path to base directory that stores all track files", 
             ArgvParser::OptionRequired);
     cmd.defineOption("image_idx", "image_index", ArgvParser::OptionRequired); 
@@ -398,12 +399,28 @@ int main(int argc, char* argv[]) {
     string bundlerPath = cmd.optionValue("bundler_path");
     string trackDir = cmd.optionValue("tracks_dir");
     string imageIdxStr = cmd.optionValue("image_idx");
+
+    string mode = "";
+    if(cmd.foundOption("mode")) {
+        mode = cmd.optionValue("mode");
+    }
+
     int imageIdx = atoi( imageIdxStr.c_str() );
 
     char file1[1000], file2[1000], file3[1000];
-    sprintf(file1, "%s/long-tracks-%d.txt", trackDir.c_str(), imageIdx);
-    sprintf(file2, "%s/triangulated-tracks-%d.txt", trackDir.c_str(), imageIdx);
-    sprintf(file3, "%s/dbg_triangulated_tracks-%d.txt", trackDir.c_str(), imageIdx);
+    if(mode == "merged") {
+        sprintf(file1, "%s/merged-tracks.txt", trackDir.c_str(), imageIdx);
+        sprintf(file2, "%s/triangulated-tracks-final.txt", 
+                trackDir.c_str(), imageIdx);
+        sprintf(file3, "%s/dbg_triangulated_tracks-final.txt", 
+                trackDir.c_str(), imageIdx);
+    } else {
+        sprintf(file1, "%s/long-tracks-%d.txt", trackDir.c_str(), imageIdx);
+        sprintf(file2, "%s/triangulated-tracks-%d.txt", 
+                trackDir.c_str(), imageIdx);
+        sprintf(file3, "%s/dbg_triangulated_tracks-%d.txt", 
+                trackDir.c_str(), imageIdx);
+    }
 
     FILE* inputFile = fopen(file1, "r");
     if(inputFile == NULL) {

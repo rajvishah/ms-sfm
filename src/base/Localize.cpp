@@ -624,7 +624,8 @@ bool FindAndVerifyCamera(int num_points, v3_t *points_solve, v2_t *projs_solve,
 
 bool BundleRegisterImage(localize::ImageData& data, vector< v3_t >& pt3, 
         vector<v2_t>& pt2, vector< int >& pt3_idx, vector<int>& pt2_idx, 
-        double* P, double* Kinit, double* Rinit, double* tinit) {
+        double* P, double* Kinit, double* Rinit, double* tinit,
+        vector<int>& inliers_final) {
     
     clock_t start  = clock();
     /* **** Connect the new camera to any existing points **** */
@@ -683,8 +684,6 @@ bool BundleRegisterImage(localize::ImageData& data, vector< v3_t >& pt3,
     v3_t *points_final = pt3.data();;
     v2_t *projs_final = pt2.data();
 
-
-    std::vector<int> inliers_final;    
     double m_min_proj_error_threshold = 8.0;
     double m_max_proj_error_threshold = 16.0;
     bool m_fixed_focal_length = true;

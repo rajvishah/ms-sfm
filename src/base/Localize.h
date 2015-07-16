@@ -11,7 +11,7 @@
 
 
 bool BundleRegisterImage(localize::ImageData& data,vector<v3_t>& pt3,vector<v2_t>& pt2,
-        vector<int>& pt3_idx,vector<int>& pt2_idx, double* P, double* K, double* R, double*t);
+        vector<int>& pt3_idx,vector<int>& pt2_idx, double* P, double* K, double* R, double*t, vector<int>& );
 void SetFocalConstraint(const localize::ImageData& data,camera_params_t *params);
 void InitializeCameraParams(const localize::ImageData& data,camera_params_t& camera);
 void ClearCameraConstraints(camera_params_t *params);
