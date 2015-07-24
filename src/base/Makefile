@@ -1,6 +1,6 @@
 CC=g++ 
-CFLAGS=-O0 -g -w -c -Wall
-#CFLAGS=-O3 -w -c -Wall
+#CFLAGS=-O0 -g -w -c -Wall
+CFLAGS=-O3 -w -c -Wall
 
 # Change the path in the following to your ANN and zlib distribution paths
 # Alternatively, copy the lib and .h files to your global lib and include paths

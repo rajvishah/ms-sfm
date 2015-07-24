@@ -60,7 +60,7 @@ int main(int argc, char* argv[]) {
     cout << "\nWriting lists " << numLists;
     for(int i=0; i < numLists; i++) {
         char filename[1000];
-        sprintf(filename,"%s/initial-pairs-%04d.txt",resultPath.c_str(),i);
+        sprintf(filename,"%s/initial-pairs-%d.txt",resultPath.c_str(),i);
         
         ofstream pairsOut( filename, std::ofstream::out );
         if( !pairsOut.is_open() ) {

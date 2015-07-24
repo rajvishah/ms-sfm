@@ -16,51 +16,52 @@
 using namespace std;
 int main( int argc, char* argv[]) {
 
-    if(argc < 4) {
-        printf("Usage : ./localize <baseDir> <level> <imageIdx>\n");
+    if(argc < 5) {
+        printf("Usage : ./localize <bundlePath> <listPath> <queryImagePath> <outPath> <queryIdx>\n");
         return -1;
     }
 
-    string imageIdxStr = argv[3];
-    int imageIdx = atoi(imageIdxStr.c_str());
+    string bundlePath = string(argv[1]);
+    string listFileName = string(argv[2]);
+    string queryFileName = string(argv[3]);
+    string camParPath = string(argv[4]);
+    string queryIdxStr = argv[5];
+    int queryIdx = atoi(queryIdxStr.c_str());
 
-    string levelStr = argv[2];
-    int level = atoi(levelStr.c_str());
-
-    string listFileName = string(argv[1]) + "/coarse_model/list.txt";
-
-    stringstream stream;
-    stream << argv[1] << "/initial_matching/ranks/file-" 
-        << imageIdx << ".txt.srt";
-    string rankFileName = stream.str();
-
-    string bundlePath;
-    string camParPath;
-
-    string camOutPath;
-    string trackOutPath;
-
-    if(level==-1) {
-        bundlePath = string(argv[1]) + "/coarse_model/bundle/";
-    } else {
-        stringstream strm, strm1;
-        strm << argv[1] << "/loc" << setw(1) << level << "/sattler_loc/";
-        bundlePath = strm.str();
-        strm1 << argv[1] << "/loc" << setw(1) << level << "/sattler_loc/" << setfill('0') << setw(4) << imageIdx <<"-cam-par.txt";
-        camParPath = strm1.str();
-        cout << camParPath << endl;
-   
-        strm1.str("");
-        strm1 << argv[1] << "/loc" << setw(1) << level << "/sattler_loc/" << setfill('0') << setw(4) << imageIdx <<"-cam-bdl.txt";
-        camOutPath = strm1.str();
-        cout << camOutPath << endl;
-        
-        strm1.str("");
-        strm1 << argv[1] << "/loc" << setw(1) << level << "/sattler_loc/" << setfill('0') << setw(4) << imageIdx <<"-trk-bdl.txt";
-        trackOutPath = strm1.str();
-        cout << trackOutPath << endl;
-        fflush(stdout);
+    ifstream queryFile( queryFileName.c_str(), ifstream::in);
+    if( ! queryFile.is_open() ) {
+        printf("\nCould not open query file");
     }
+
+    vector<int> queryToImage;
+    map<int,string> queryMap;
+    string line;
+    while(getline(queryFile, line)) {
+        stringstream ss(line);
+        int qId;
+        string qName;
+        ss >> qId >> qName;
+        queryMap.insert(make_pair(qId, qName)); 
+        queryToImage.push_back(qId);
+    }
+   
+    int imageIdx = queryToImage[queryIdx];
+    stringstream ss;
+    ss << camParPath << setfill('0') << setw(4) << imageIdx <<"-cam-par.txt";
+    string camFilePath = ss.str();
+    
+    ss.str("");
+    ss << camParPath << setfill('0') << setw(4) << imageIdx <<"-cam-bdl.txt";
+    string camOutPath = ss.str();
+    
+    ss.str("");
+    ss << camParPath << setfill('0') << setw(4) << imageIdx <<"-trk-bdl.txt";
+    string trackOutPath = ss.str();
+
+
+    bundle::Bundle bdl;
+    reader::BundleReader br(bundlePath, &bdl); 
+    br.read(&bdl);
 
     ifstream listFile(listFileName.c_str(), std::ifstream::in);
     if(!listFile.is_open()) {
@@ -69,32 +70,27 @@ int main( int argc, char* argv[]) {
     }
 
     string imageString;
-    vector<string> keyFileNames;
-    string line;
     int line_count = 0;
     while(getline(listFile, line)) {
         if(line_count == imageIdx) {
             imageString = line;
+//            cout << imageString;
+            fflush(stdout);
+            break;
         }
-        stringstream strm(line);
-        string str;
-        std::getline(strm, str, '.');
-        string keyFileName = str + ".key";
-        keyFileNames.push_back(keyFileName);
         line_count++;
     }
     listFile.close();
 
-    bundle::Bundle bdl;
-    reader::BundleReader br(bundlePath, &bdl); 
-    br.read(&bdl);
+    string keyName = queryMap[imageIdx];
+    cout << keyName;
 
     unsigned char* refKeys;
     keypt_t* refKeysInfo;
-    int numRefKeys = ReadKeyFile( keyFileNames[imageIdx].c_str(), 
+    int numRefKeys = ReadKeyFile( keyName.c_str(), 
             &refKeys, &refKeysInfo );
 
-    ifstream camParFile(camParPath.c_str(), std::ifstream::in);
+    ifstream camParFile(camFilePath.c_str(), std::ifstream::in);
     if(!camParFile.is_open()) {
         cout << "\nError Opening Cam Par File";
         return -1;
@@ -140,6 +136,11 @@ int main( int argc, char* argv[]) {
         }
     }
 
+    if(matches3D_2D.size() == 0) {
+        printf("\nNo matches to process, exiting");
+        return 0;
+    }
+
     //printf("\n\nRotation");
     //matrix_print(3,3,R);
     //printf("\n\nCalibration");
@@ -180,21 +181,28 @@ int main( int argc, char* argv[]) {
 
 
     camParFile.close();
-    printf("\nFound %d matches", matches3D_2D.size()); 
+    printf("\nFound %d matches", matches3D_2D.size());
+    fflush(stdout);
+
     vector< pair<int, int> >& finalMatches2 = matches3D_2D;
 
     vector< v3_t > pt3;
     vector< v2_t > pt2;
     vector< int > pt3_idx;
     vector< int > pt2_idx;
+    
 
     localize::ImageData data;
     char* imageStr = strdup(imageString.c_str());
+
     data.InitFromString(imageStr, ".", false);
     data.m_licensed = true;
     NormalizeKeyPoints(numRefKeys, refKeysInfo, 
             data.GetWidth(), data.GetHeight());
 
+
+    printf("\nPreparing arrays");
+    fflush(stdout);
     for(int count=0; count < finalMatches2.size(); count++) {
         pt3_idx.push_back(count);
         pt2_idx.push_back(count);
@@ -287,5 +295,6 @@ int main( int argc, char* argv[]) {
         printf("\nFailed to register image %d", imageIdx);
         fflush(stdout);
     }
-    return -1;
+    printf("\nDone with camera correction for %d", imageIdx);
+    return 0;
 }

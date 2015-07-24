@@ -8,6 +8,14 @@
 #include <algorithm>
 #include <set>
 #include <time.h>
+#include <cstddef>
+
+#include <boost/archive/text_iarchive.hpp>
+#include <boost/iostreams/filtering_stream.hpp>
+#include <boost/iostreams/filter/gzip.hpp>
+
+#include "../thirdparty/predict_match/random-forest/node-gini.hpp"
+#include "../thirdparty/predict_match/random-forest/forest.hpp"
 
 #include "../base/keys2a.h"
 #include "../base/argvparser.h"
@@ -99,7 +107,7 @@ void DeleteMultiscaleKdTree( vector< ANNkd_tree*>& trees) {
 
 void CreateMultiscaleKdTree(vector<ANNkd_tree*>& trees, 
         unsigned char* keys, 
-        int numKeys, int limit = 5, int numPartition = 10) {
+        int numKeys, int limit = 1, int numPartition = 5) {
 
 
     int partitionSize = (int)(floor(numKeys/numPartition));
@@ -176,10 +184,13 @@ int SearchInMultiscaleKdtree( bool newPair, unsigned char* query,
         count0 = 0;
         count1 = 0;
     }
+
     float prevBest = 1000000, prevSecondBest = 1000000;
 
-    vector<int> treeIds = ComputeTreeIndices(newPair, trees.size());
-    int numTrees = treeIds.size();
+//    vector<int> treeIds = ComputeTreeIndices(newPair, trees.size());
+//    int numTrees = treeIds.size();
+
+    int numTrees = trees.size();
 
     int matchingPt = -1;
 
@@ -187,7 +198,8 @@ int SearchInMultiscaleKdtree( bool newPair, unsigned char* query,
         vector <ANNidx> indices(2); 
         vector <ANNidx> dists(2); 
 
-        int idx = treeIds[i];
+//      int idx = treeIds[i];
+        int idx = i;
         trees[idx]->annkPriSearch( query, 2, indices.data(), 
                 dists.data(), 0.0);
 
@@ -224,7 +236,7 @@ int SearchInMultiscaleKdtree( bool newPair, unsigned char* query,
             }
             int relIdx = (int)indices[0];
             matchingPt = relIdx + partitionSize*idx;
-            ComputeTreeIndices(false, trees.size(), idx);
+//            ComputeTreeIndices(false, trees.size(), idx);
             break;
         } 
     }
@@ -246,6 +258,23 @@ int main(int argc, char* argv[]) {
         string str = cmd.optionValue("topscale_percent");
         topscale = atoi(str.c_str());
     }
+
+   //******************************************
+   //*********** Predict Matchability Prepare 
+    liblearning::RandomForest::RandomForest< liblearning::RandomForest::NodeGini<liblearning::RandomForest::AxisAlignedSplitter> > rtrees ;
+    
+	std::ifstream ifs("/home/cvit/rajvi/ms-sfm/ms-sfm/src/thirdparty/predict_match/rforest.gz", std::ios_base::in | std::ios_base::binary) ;
+    if(!ifs.is_open()) {
+        printf("\nCould not open forest file");
+        return -1;
+    }
+	boost::iostreams::filtering_istream ins ;
+	ins.push(boost::iostreams::gzip_decompressor()) ;
+	ins.push(ifs) ;
+	boost::archive::text_iarchive ias(ins) ;
+	ias >> BOOST_SERIALIZATION_NVP(rtrees) ;
+   //******************************************
+
 
     clock_t start = clock();
     ifstream pairsFile(pairsList.c_str());
@@ -382,9 +411,33 @@ int main(int argc, char* argv[]) {
         vector< pair<int,int> > matches;
 
         int treeIdx = treeIndex[ refIdx ];
+        bool skipPair = false;
         for(int q = 0; q < numQueries; q++) {
+            /*
+            if(q > 200 && matches.size() < 2) {
+                skipPair = true;
+                break;
+            }
+            */
+            
             if(q != 0) newPair = false;
             unsigned char* qKey = srcKeys + 128*q;
+
+            /*
+            bool status = true; 
+            // *****************************************
+            std::vector<float> siftdesc(128) ;
+            std::vector<float> predRes(rtrees.params.n_classes);
+            for (int l = 0; l < 128; ++l)
+                siftdesc [l] = (float)(qKey[l]) ;
+		    rtrees.evaluate(&siftdesc[0], &predRes[0]) ;
+            status = (predRes[0] > (1.0 - 0.525));
+            // ******************************************
+
+            if(!status) {
+                continue;
+            }
+            */
 
             int matchingPt = SearchInMultiscaleKdtree( newPair, 
                     qKey, refTrees[treeIdx], numFeatures[treeIdx]); 
@@ -397,11 +450,24 @@ int main(int argc, char* argv[]) {
             }
         }
 
-        int numMatches = matches.size();
-
-        if(numMatches >= 4 && numMatches < 16 && !allQueriesDone) {
-            for(int q=numQueries; q < 2*numQueries; q++) {
+        int numMatches = matches.size(); 
+        if(!skipPair && numMatches >= 4 && numMatches < 16 && !allQueriesDone) {
+            for(int q=numQueries; q < 3*numQueries; q++) {
                 unsigned char* qKey = srcKeys + 128*q;
+                
+                bool status = true;
+                // *****************************************
+                std::vector<float> siftdesc(128) ;
+                std::vector<float> predRes(rtrees.params.n_classes);
+                for (int l = 0; l < 128; ++l)
+                    siftdesc [l] = (float)(qKey[l]) ;
+                rtrees.evaluate(&siftdesc[0], &predRes[0]) ;
+                status = (predRes[0] > (1.0 - 0.525));
+                // ******************************************
+
+                if(!status) {
+                    continue;
+                }
 
                 int matchingPt = SearchInMultiscaleKdtree( newPair, 
                         qKey, refTrees[treeIdx], numFeatures[treeIdx]); 
@@ -419,6 +485,7 @@ int main(int argc, char* argv[]) {
                 count++;
             }
         }
+        
 
         if(numMatches > 0) {
             rankFile << srcIdx << " " << refIdx << " " << numMatches << endl;
@@ -444,6 +511,7 @@ int main(int argc, char* argv[]) {
     matchFile.close();
     rankFile.close();
 
+    printf("\n[GlobalMatchLists] Done matching pairs in list %s", pairsList.c_str());
     printf("\nAdded %d new pairs due to adaptive queries", count);
     /// Skiped Freeing keyfile memory due to performance issues
     /// Assuming program exits right afterwards
