@@ -1,56 +1,96 @@
+#!/bin/bash
 imageDir=$1
 runDir=`pwd`
 binPath=/home/cvit/rajvi/ms-sfm/ms-sfm/bin/
 scriptPath=/home/cvit/rajvi/ms-sfm/ms-sfm/scripts/
 
-#################################################################################
 globalMatchDir=$runDir/initial_matching
+cgmDir=$runDir/coarse_model
+locDir=$runDir/loc0
+densDir=$runDir/dens0
+loc1Dir=$runDir/loc1
+
+source $scriptPath/SbatchCaller.sh
+
+#################################################################################
+: '
+rm -rf $globalMatchDir; mkdir $globalMatchDir
 ls $imageDir/*.key > $globalMatchDir/list_keys.txt
 
+numJobs=200
 cd $globalMatchDir
-$scriptPath/CreateGlobalMatchingJob.sh $binPath 300 $globalMatchDir
+$scriptPath/CreateGlobalMatchingJobs.sh $binPath $numJobs $globalMatchDir
 
-sbatch global_matching_job.sh 
+CALL_SBATCH global_matching_job.sh 
 
+cd ..
+
+'
+cgmDir=$runDir/coarse_model
+
+: '
 #================================================================================
 cat $globalMatchDir/matches/initial-matches*.txt > $globalMatchDir/matches.txt
 
 #################################################################################
-cgmDir=$runDir/coarse_model
-mkdir $cgmDir
-
-cp $globalMatchDir/matches.txt $cgmDir/matches.txt
+rm -rf $cgmDir; mkdir -p $cgmDir/log
+cp $globalMatchDir/matches.txt $cgmDir/matches.init.txt   
 
 cd $cgmDir
-sbatch run_bundler_job.sh
+
+cat $scriptPath/run_bundler_preemble.txt > run_bundler_job.sh
+echo $scriptPath/RunBundler.sh $imageDir >> run_bundler_job.sh  
+
+#=================================================================================
+
+CALL_SBATCH run_bundler_job.sh
+
+cd ..
 
 #==================================================================================
 cp $cgmDir/list_tmp.txt $cgmDir/list_images.txt 
-cat $cgmDir/list_tmp.txt | tr ".jpg" ".key" > $cgmDir/list_keys.txt
+ls $imageDir/*.key > $cgmDir/list_keys.txt
 
 ###################################################################################
 
-locDir=$runDir/loc0
-mkdir $locDir
+rm -rf $locDir; mkdir -p $locDir/log
+cd $locDir; 
 
-cd $locDir
-$scriptPath/CreateLocalizationJobs.sh $cgmDir/bundle/bundle.out $cgmDir/list_keys.txt $binPath $locDir 
-
-sbatch localization_array_jobs.sh 
-
-#================================================================================
-
-sbatch cam_correction_jobs.sh 
+$scriptPath/CreateLocalizationJobs.sh $cgmDir/bundle/bundle.out $cgmDir/list_keys.txt $binPath $locDir
+$scriptPath/CreateCameraCorrectionJobs.sh $binPath $cgmDir $cgmDir $locDir
+cat $scriptPath/run_merge_camera_preemble.txt > run_merge_camera.sh
+echo $binPath/merge_cameras $cgmDir/bundle.out $locDir/CamParFiles/ $locDir/bundle.out >> run_merge_camera.sh 
 
 #================================================================================
 
-sbatch merge_cameras_job.sh
+#CALL_SBATCH prepare_localization.sh 
+
+#================================================================================
+
+#CALL_SBATCH localization_array_jobs.sh 
+
+#================================================================================
+
+#CALL_SBATCH cam_correction_jobs.sh 
+
+#================================================================================
+
+CALL_SBATCH run_merge_camera.sh
+
+#================================================================================
+
+'
+
 
 ###################################################################################
 
 densDir=$runDir/dens0
-mkdir $densDir
+rm -rf $densDir; mkdir -p $densDir/log
 
 cd $densDir
 $scriptPath/CreateGuidedMatchingJobs.sh
+###################################################################################
 
+: '
+'
+echo Done

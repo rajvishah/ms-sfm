@@ -8,7 +8,8 @@ listFile=$2
 acgBinPath=$3
 outPath=$4
 
-rm $queryFile
+queryFile=$outPath/queries.txt
+touch $queryFile
 
 infoLine=`sed -n -e 2p $bundleFile`
 infoArray=($infoLine)
@@ -31,7 +32,7 @@ do
         if [ $counter1 == $b ];
         then
 #            echo $b 
-            echo $b" "$line >> $outPath/$queryFile
+            echo $b" "$line >> $queryFile
             counter2=`expr $counter2 + $constantOne`
         fi
         counter1=`expr $counter1 + $constantOne`
@@ -42,7 +43,7 @@ done < $listFile
 suffix=`echo $bundleFile | cut -d'.' -f2`
 infoFileName=""
 descFileName=""
-echo $suffix
+#echo $suffix
 if [ $suffix==".out" ]; then
     infoFileName="bundle.info"
     descFileName="bundle_desc_voc.bin"
@@ -51,16 +52,21 @@ else
     descFileName="bundle_desc_voc"$suffix".bin"
 fi
 
-$acgBinPath/Bundle2Info $bundleFile $listFile $outPath/$infoFileName
+scriptDir=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+
+
+cat $scriptDir/run_localization_preemble.txt > prepare_localization.sh
+echo $acgBinPath/Bundle2Info $bundleFile $listFile $outPath/$infoFileName >> prepare_localization.sh
 args=$outPath/$infoFileName" 1 100000 "$acgBinPath"/clusters.txt "$outPath/$descFileName" 6 1 0"
-echo $args
-$acgBinPath/compute_desc_assignments $args
+#echo $args
+echo $acgBinPath/compute_desc_assignments $args >> prepare_localization.sh
 
 mkdir $outPath/CamParFiles
 
 numImgToLoc=`cat $queryFile | wc -l`
 numImgToLoc=`expr $numImgToLoc - 1`
 jobFile=localization_array_jobs.sh
+
 echo "#!/bin/bash" > $jobFile
 echo "#SBATCH --job-name=localization" >> $jobFile
 echo "#SBATCH --output=log/localization_%A_%a.out" >> $jobFile
@@ -73,4 +79,7 @@ echo "#SBATCH --mem-per-cpu=3945" >> $jobFile
 echo "#SBATCH --ntasks-per-core=2" >> $jobFile
 echo "#SBATCH -t 24:00:00" >> $jobFile
 
-echo $acgBinPath/acg_localizer_active_search $queryFile $bundleFile 100000 $acgBinPath/clusters.txt $outPath/$descFileName 0 $outPath/CamParFiles/ 200 1 1 1 10 \$SLURM_ARRAY_TASK_ID 10 >> $jobFile 
+echo $acgBinPath/acg_localizer_active_search $queryFile $bundleFile 100000 $acgBinPath/clusters.txt $outPath/$descFileName 0 $outPath/CamParFiles/ 200 1 1 1 \$SLURM_ARRAY_TASK_ID 10 >> $jobFile 
+
+: '
+'

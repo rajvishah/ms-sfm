@@ -27,8 +27,8 @@ mkdir $RESULT_DIR
 mkdir $LIST_DIR
 mkdir $MATCHES_DIR
 
-cp $BUNDLER_DIR/bundle/bundle.out $BASE_DIR/bundle.out
-cp $BUNDLER_DIR/list_tmp.txt $BASE_DIR/list_images.txt
+cp $BUNDLER_DIR/bundle.out $BASE_DIR/bundle.out
+cp $BUNDLER_DIR/list_images.txt $BASE_DIR/list_images.txt
 cp $BUNDLER_DIR/list_keys.txt $BASE_DIR/list_keys.txt
 identify $IMAGE_DIR/*.jpg | cut -d' ' -f3 | sed 's/x/ /g'> $BASE_DIR/image_dims.txt
 
@@ -37,9 +37,28 @@ identify $IMAGE_DIR/*.jpg | cut -d' ' -f3 | sed 's/x/ /g'> $BASE_DIR/image_dims.
 
 #../bin/CreateGuidedMatchPairs --base_dir=$BASE_DIR --result_dir=$RESULT_DIR --nn_images=$NUM_NEAR --num_lists=$NUM_LISTS --query_list=$1/query_ids.txt
 
-$BIN_PATH/CreateGuidedMatchPairs --base_dir=$BASE_DIR --result_dir=$LIST_DIR --nn_images=$NUM_NEAR --num_lists=$NUM_LISTS
-
+$BIN_PATH/CreateGuidedMatchPairs --base_dir=$BUNDLER_DIR --result_dir=$LIST_DIR --nn_images=$NUM_NEAR --num_lists=$NUM_LISTS
 pairListFiles=($LIST_DIR/pairs-*.txt)
+numPairLists=${#pairListFiles[@]}
+
+jobFile=guidedmatch_array_jobs.sh
+
+echo "#!/bin/bash" > $jobFile
+echo "#SBATCH --job-name=guidedmatch" >> $jobFile
+echo "#SBATCH --output=log/guidedmatch_%A_%a.out" >> $jobFile
+echo "#SBATCH --error=log/guidedmatch_%A_%a.err" >> $jobFile
+arrayStr="#SBATCH --array=0-"$numPairLists
+echo $arrayStr  >> $jobFile
+echo "#SBATCH --partition=long" >> $jobFile
+echo "#SBATCH --account=cvit" >> $jobFile
+echo "#SBATCH --mem-per-cpu=3945" >> $jobFile
+echo "#SBATCH --ntasks-per-core=2" >> $jobFile
+echo "#SBATCH -t 24:00:00" >> $jobFile
+
+echo $BIN_PATH/GuidedMatchLists --base_dir="$BASE_DIR" --result_dir="$MATCHES_DIR" --list_file="$file 2>&1 &" >> $filename
+
+
+: '
 filecounter=-1
 counter=0
 numCores=24
@@ -67,3 +86,4 @@ do
     counter=`expr $counter + 1`
     echo $counter
 done
+'
