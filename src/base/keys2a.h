@@ -108,6 +108,12 @@ std::vector<KeypointMatch> MatchKeys(int num_keys1, unsigned char *k1,
 				     double ratio = 0.6, 
                                      int max_pts_visit = 200);
 
+std::vector<KeypointMatch> MatchKeys(int num_keys1, unsigned char *k1, 
+                                     ANNkd_tree *tree2,
+				     double ratio = 0.6, 
+                                     int max_pts_visit = 200);
+
+
 std::vector<KeypointMatch> MatchKeys(int num_keys0, int num_keys1, unsigned char *k1, 
                                      ANNkd_tree *tree2,float* vertexquality,
 				     double ratio = 0.6, 

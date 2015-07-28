@@ -51,7 +51,7 @@ do
 done
 
 # Extract Width and Height of images and store to a file
-identify $IMAGE_DIR/*.jpg | cut -d' ' -f3 | sed 's/x/ /g'> dims.init.txt
+identify $IMAGE_DIR/*.jpg | cut -d' ' -f3 | sed 's/x/ /g'> image_dims.txt
 
 # Create the list of images and extract focal information
 echo "[- Creating images' list -]"

@@ -497,6 +497,34 @@ std::vector<KeypointMatch> MatchKeys(int num_keys0, int num_keys1, unsigned char
     return matches;    
 }
 
+std::vector<KeypointMatch> MatchKeys(int num_keys1, unsigned char *k1, 
+                                     ANNkd_tree *tree2,
+                                     double ratio, int max_pts_visit)
+{
+    annMaxPtsVisit(max_pts_visit);
+    std::vector<KeypointMatch> matches;
+
+    /* Now do the search */
+    // clock_t start = clock();
+    for (int i = 0; i < num_keys1; i++) {
+        ANNidx nn_idx[2];
+        ANNdist dist[2];
+
+        tree2->annkPriSearch(k1 + 128 * i, 2, nn_idx, dist, 0.0);
+
+        if (((double) dist[0]) < ratio * ratio * ((double) dist[1])) {
+            matches.push_back(KeypointMatch(i, nn_idx[0]));
+        }
+    }
+    // clock_t end = clock();
+
+    // printf("Searching tree took %0.3fs\n", 
+    //        (end - start) / ((double) CLOCKS_PER_SEC));
+
+    return matches;    
+}
+
+
 /* Compute likely matches between two sets of keypoints */
 std::vector<KeypointMatch> MatchKeys(int num_keys1, unsigned char *k1, 
                                      int num_keys2, unsigned char *k2, 

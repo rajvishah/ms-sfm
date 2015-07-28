@@ -17,6 +17,32 @@ typedef struct pointStruct {
     double ycord;
 }pointstr;
 
+
+MatchPairs::MatchPairs(string& bundleDir, 
+        string& baseDir, int numNearby) :
+    br(bundleDir), imgList(baseDir), keyList(baseDir) {
+        initialized = false;
+        bool s1 = imgList.read();
+        bool s2 = keyList.read();
+        bool s3 = br.read(&bdl);
+        numMaxCandidates = numNearby;
+        numMinCovisible = 16;
+
+
+        int numImages = bdl.getNumImages();
+        query2locIdx.resize(numImages);
+        if(s1 && s2 && s3) {
+            for(int i = 0; i < numImages; i++) {
+                if(bdl.validTriangulated[i]) {
+                    localizedImages.push_back(i);
+                    query2locIdx[i] = localizedImages.size() - 1;
+                } 
+            }
+            initialized = true;
+        }
+    }
+
+
 MatchPairs::MatchPairs(string& baseDir, int numNearby) :
     br(baseDir), imgList(baseDir), keyList(baseDir) {
         initialized = false;
@@ -112,7 +138,7 @@ bool MatchPairs::writeUniquePairs(string& resultDir, int numLists) {
     int numPairs = candidatePairs.size();
     int numPairsPerList = ceil(numPairs*1.0f/numLists);
 
-    int count = 0;
+    int count = -1;
     FILE* fp = NULL;
     char filename[1000];
     for(int i=0; i < numPairs; i++) {

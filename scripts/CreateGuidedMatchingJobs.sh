@@ -2,44 +2,49 @@
 
 # Run this script from the directory where you wish to create slurm jobs
 # Run this script to create various files necessary to run guided matching
-# BUNDLER_DIR (previous reconstruction directory)
+# BUNDLE_DIR (previous reconstruction output dir)
+# BASE_LIST_PATH (directory where all lists exist, coarse reconstruction in most cases)
 # BASE_DIR (directory where you want to store the matching outcome)
 # IMAGE_DIR (where images & keys are stored)
 # NUM_NEAR (number of neighbouring images to match)
 # NUM_LISTS ( number of parallel lists (usually 212) )
 
-BUNDLER_DIR=$1
-BASE_DIR=$2
-IMAGE_DIR=$3
-NUM_NEAR=$4
-NUM_LISTS=$5
-BIN_PATH=$6
+BUNDLE_DIR=$1
+BASE_LIST_PATH=$2
+BASE_DIR=$3
+IMAGE_DIR=$4
+NUM_NEAR=$5
+NUM_LISTS=$6
+BIN_PATH=$7
 
-echo "USAGE : BUNDLER_DIR BASE_DIR IMAGE_DIR NUM_NEAR NUM_LISTS BIN_PATH"
+if [ $# -ne 7 ]; then
+    echo "Incorrect number of input arguments"
+    echo "USAGE : BUNDLE_FILE LISTS_DIR DENS_DIR IMAGE_DIR NUM_NEAR NUM_LISTS BIN_PATH"
+#    echo $1 $2 $3 $4 $5 $6 $7
+fi
 
-RESULT_DIR=$BASE_DIR/guided_match/
-LIST_DIR=$RESULT_DIR"/matching_lists/"
-MATCHES_DIR=$RESULT_DIR"/matches_files/"
+LIST_DIR=$BASE_DIR/matching_lists/
+MATCHES_DIR=$BASE_DIR/matches_files/
 
-rm -r $LIST_DIR
-rm -r $MATCHES_DIR
-mkdir $RESULT_DIR
+rm -rf $LIST_DIR
+rm -rf $MATCHES_DIR
 mkdir $LIST_DIR
 mkdir $MATCHES_DIR
 
-cp $BUNDLER_DIR/bundle.out $BASE_DIR/bundle.out
-cp $BUNDLER_DIR/list_images.txt $BASE_DIR/list_images.txt
-cp $BUNDLER_DIR/list_keys.txt $BASE_DIR/list_keys.txt
-identify $IMAGE_DIR/*.jpg | cut -d' ' -f3 | sed 's/x/ /g'> $BASE_DIR/image_dims.txt
-
-# For the first iteration, do not pass --query_list
+# For the first iteration, do not pass --query_list 
 # For later iterations, pass the list of newly localized images as --query_list
 
-#../bin/CreateGuidedMatchPairs --base_dir=$BASE_DIR --result_dir=$RESULT_DIR --nn_images=$NUM_NEAR --num_lists=$NUM_LISTS --query_list=$1/query_ids.txt
+if [ -e $BUNDLE_DIR/localized_queries.txt ]; then
+    echo "Creating limited guided match lists for localized imgs"
+    $BIN_PATH/CreateGuidedMatchPairs --bundle_dir=$BUNDLE_DIR --base_dir=$BASE_LIST_PATH --result_dir=$LIST_DIR --nn_images=$NUM_NEAR --num_lists=$NUM_LISTS --query_list=$BUNDLE_DIR/localized_queries.txt
+else
+    $BIN_PATH/CreateGuidedMatchPairs --bundle_dir=$BUNDLE_DIR --base_dir=$BASE_LIST_PATH --result_dir=$LIST_DIR --nn_images=$NUM_NEAR --num_lists=$NUM_LISTS
+fi
 
-$BIN_PATH/CreateGuidedMatchPairs --base_dir=$BUNDLER_DIR --result_dir=$LIST_DIR --nn_images=$NUM_NEAR --num_lists=$NUM_LISTS
+sleep 3
+
 pairListFiles=($LIST_DIR/pairs-*.txt)
-numPairLists=${#pairListFiles[@]}
+numPairLists=`expr ${#pairListFiles[@]} - 1`
 
 jobFile=guidedmatch_array_jobs.sh
 
@@ -55,7 +60,7 @@ echo "#SBATCH --mem-per-cpu=3945" >> $jobFile
 echo "#SBATCH --ntasks-per-core=2" >> $jobFile
 echo "#SBATCH -t 24:00:00" >> $jobFile
 
-echo $BIN_PATH/GuidedMatchLists --base_dir="$BASE_DIR" --result_dir="$MATCHES_DIR" --list_file="$file 2>&1 &" >> $filename
+echo $BIN_PATH/GuidedMatchLists --bundle_dir=$BUNDLE_DIR --base_dir=$BASE_LIST_PATH --result_dir=$MATCHES_DIR --list_file=$LIST_DIR/pairs-\$SLURM_ARRAY_TASK_ID.txt >> $jobFile
 
 
 : '

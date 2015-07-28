@@ -146,7 +146,7 @@ bool BundleReader::readViewInters() {
 }
 
 bool BundleReader::readAngleArr() {
-	cout << "Reading view inters file " << angleArrFileName.c_str() << endl;
+	cout << "Reading angle array file " << angleArrFileName.c_str() << endl;
 	
     FILE *f = fopen( angleArrFileName.c_str(), "r" );
 	if( f == NULL ) {

@@ -9,6 +9,11 @@ cgmDir=$runDir/coarse_model
 locDir=$runDir/loc0
 densDir=$runDir/dens0
 loc1Dir=$runDir/loc1
+dens1Dir=$runDir/dens1
+loc2Dir=$runDir/loc2
+dens2Dir=$runDir/dens2
+loc3Dir=$runDir/loc3
+dens3Dir=$runDir/dens3
 
 source $scriptPath/SbatchCaller.sh
 
@@ -23,10 +28,40 @@ $scriptPath/CreateGlobalMatchingJobs.sh $binPath $numJobs $globalMatchDir
 
 CALL_SBATCH global_matching_job.sh 
 
+touch global_match_stats.txt
+averageTime=0
+maxTime=0
+numLists=`ls log/global_match_*.out | wc -l`
+for file in log/global_match_*.out;
+do
+    timePerScript=`grep -Po '(?<=Matching took).*(=?s)' $file | paste -sd+ - | bc`
+    echo "Time taken by script $file is " $timePerScript " seconds" >> global_match_stats.txt
+    averageTime=`expr $timePerScript + $averageTime`
+    if [ $timePerScript -ge $maxTime ]; then
+        maxTime=$timePerScript
+    fi
+done
+averageTime=`expr $averageTime / $numLists`
+echo "-----------------" >> global_match_stats.txt 
+echo "Average time by a script is " $averageTime >> global_match_stats.txt 
+echo "Max time by a script is " $averageTime >> global_match_stats.txt 
+
+
+
+cat log/global_match_*.err > log/combined_global_match.err
+cat log/global_match_*.out > log/combined_global_match.out
+rm log/global_match_*.err
+rm log/global_match_*.out
+rm ranks/*
+rm pairs/*
+
+grep 
+numPairsMatched=`grep "Writing" log/combined_global_match.out | wc -l`
+echo "Total connected pairs " $numPairsMatched
+
 cd ..
 
 '
-cgmDir=$runDir/coarse_model
 
 : '
 #================================================================================
@@ -53,44 +88,38 @@ ls $imageDir/*.key > $cgmDir/list_keys.txt
 
 ###################################################################################
 
-rm -rf $locDir; mkdir -p $locDir/log
-cd $locDir; 
-
-$scriptPath/CreateLocalizationJobs.sh $cgmDir/bundle/bundle.out $cgmDir/list_keys.txt $binPath $locDir
-$scriptPath/CreateCameraCorrectionJobs.sh $binPath $cgmDir $cgmDir $locDir
-cat $scriptPath/run_merge_camera_preemble.txt > run_merge_camera.sh
-echo $binPath/merge_cameras $cgmDir/bundle.out $locDir/CamParFiles/ $locDir/bundle.out >> run_merge_camera.sh 
-
-#================================================================================
-
-#CALL_SBATCH prepare_localization.sh 
-
-#================================================================================
-
-#CALL_SBATCH localization_array_jobs.sh 
-
-#================================================================================
-
-#CALL_SBATCH cam_correction_jobs.sh 
-
-#================================================================================
-
-CALL_SBATCH run_merge_camera.sh
-
-#================================================================================
-
-'
-
+$scriptPath/RunLocalize.sh $locDir $scriptPath $binPath $cgmDir $cgmDir
 
 ###################################################################################
 
-densDir=$runDir/dens0
-rm -rf $densDir; mkdir -p $densDir/log
+$scriptPath/RunDensify.sh $densDir $cgmDir $locDir $imageDir $scriptPath
 
-cd $densDir
-$scriptPath/CreateGuidedMatchingJobs.sh
 ###################################################################################
 
-: '
+$scriptPath/RunLocalize.sh $loc1Dir $scriptPath $binPath $densDir $cgmDir
+
+###################################################################################
+
+$scriptPath/RunDensify.sh $dens1Dir $cgmDir $loc1Dir $imageDir $scriptPath $binPath
+
+###################################################################################
+
+$scriptPath/RunLocalize.sh $loc2Dir $scriptPath $binPath $dens1Dir $cgmDir
+
+###################################################################################
+
+$scriptPath/RunDensify.sh $dens2Dir $cgmDir $loc2Dir $imageDir $scriptPath $binPath
+
+###################################################################################
+
 '
+###################################################################################
+
+$scriptPath/RunLocalize.sh $loc3Dir $scriptPath $binPath $dens2Dir $cgmDir
+
+###################################################################################
+
+$scriptPath/RunDensify.sh $dens3Dir $cgmDir $loc3Dir $imageDir $scriptPath $binPath
+
+###################################################################################
 echo Done

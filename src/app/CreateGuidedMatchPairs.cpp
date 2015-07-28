@@ -12,7 +12,9 @@ void SetupCommandlineParser(ArgvParser& cmd, int argc, char* argv[]) {
   cmd.addErrorCode(1, "Error");
 
   cmd.setHelpOption("h", "help",""); 
-  cmd.defineOption("base_dir", "Path to base directory that stores all list files \n--list_keys.txt\n--list_images.txt\n--image_dims.txt\nnum_sifts.txt\n--bundle.out", 
+  cmd.defineOption("base_dir", "Path to base directory that stores all list files \n--list_keys.txt\n--list_images.txt\n--image_dims.txt\nnum_sifts.txt", 
+      ArgvParser::OptionRequired);
+  cmd.defineOption("bundle_dir", "Path to base directory that stores bundle file", 
       ArgvParser::OptionRequired);
 
   cmd.defineOption("result_dir", "Path to base directory that stores all matches files", 
@@ -36,6 +38,7 @@ int main(int argc, char* argv[]) {
     ArgvParser cmd;
     SetupCommandlineParser(cmd, argc, argv);
 
+    string bundleDir = cmd.optionValue("bundle_dir");
     string baseDir = cmd.optionValue("base_dir");
     string resultDir = cmd.optionValue("result_dir");
 
@@ -52,7 +55,7 @@ int main(int argc, char* argv[]) {
     string numListsStr = cmd.optionValue("num_lists");
     int numLists = atoi( numListsStr.c_str() );
 
-    sfm::MatchPairs mg(baseDir, numNearby);
+    sfm::MatchPairs mg(bundleDir, baseDir, numNearby);
     if(!mg.isInitialized()) {
         printf("\nNot Initialized Properly");
         fflush(stdout);

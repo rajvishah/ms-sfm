@@ -52,6 +52,7 @@ class MatchPairs {
     }
 
     MatchPairs(string& param, int nearby);
+    MatchPairs(string& bundle, string& lists, int nearby);
 
 
     const vector<int>& getLocalizedImages() {

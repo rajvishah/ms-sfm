@@ -376,6 +376,7 @@ void SetupCommandlineParser(ArgvParser& cmd, int argc, char* argv[]) {
     cmd.addErrorCode(1, "Error");
 
     cmd.setHelpOption("h", "help",""); 
+    cmd.defineOption("lists_path", "Lists Path", ArgvParser::OptionRequired);
     cmd.defineOption("bundler_path", "Bundler Path", ArgvParser::OptionRequired);
     cmd.defineOption("mode", "Mode", ArgvParser::NoOptionAttribute);
     cmd.defineOption("tracks_dir", "Path to base directory that stores all track files", 
@@ -396,6 +397,7 @@ int main(int argc, char* argv[]) {
     ArgvParser cmd;
     SetupCommandlineParser(cmd, argc, argv);
 
+    string listsPath = cmd.optionValue("lists_path");
     string bundlerPath = cmd.optionValue("bundler_path");
     string trackDir = cmd.optionValue("tracks_dir");
     string imageIdxStr = cmd.optionValue("image_idx");
@@ -407,13 +409,20 @@ int main(int argc, char* argv[]) {
 
     int imageIdx = atoi( imageIdxStr.c_str() );
 
+    FILE* outputFile1 = NULL;
     char file1[1000], file2[1000], file3[1000];
     if(mode == "merged") {
         sprintf(file1, "%s/merged-tracks.txt", trackDir.c_str(), imageIdx);
         sprintf(file2, "%s/triangulated-tracks-final.txt", 
                 trackDir.c_str(), imageIdx);
-        sprintf(file3, "%s/dbg_triangulated_tracks-final.txt", 
+        sprintf(file3, "%s/bundle-triangulated_tracks-final.txt", 
                 trackDir.c_str(), imageIdx);
+        
+        outputFile1 = fopen(file3, "w");
+        if(outputFile1 == NULL) {
+            printf("\nOutput1 file could not be created");
+            return -1;
+        }
     } else {
         sprintf(file1, "%s/long-tracks-%d.txt", trackDir.c_str(), imageIdx);
         sprintf(file2, "%s/triangulated-tracks-%d.txt", 
@@ -434,20 +443,13 @@ int main(int argc, char* argv[]) {
         return -1;
     }
 
-    FILE* outputFile1 = fopen(file3, "w");
-    if(outputFile1 == NULL) {
-        printf("\nOutput1 file could not be created");
-        return -1;
-    }
-
-
     bundle::Bundle bdl;
-    reader::ImageListReader imList( bundlerPath );
+    reader::ImageListReader imList( listsPath );
     reader::BundleReader br(bundlerPath, &bdl); 
 
     bool status = imList.read();
     if(!status) {
-        cout << "\nProblem reading image list";
+        cout << "\nProblem reading image list " << listsPath;
         return -1;
     }
 
@@ -478,26 +480,36 @@ int main(int argc, char* argv[]) {
         bool status = triangulateTrack(&bdl, imList, track, point);
         if(status) {
             finalTrackCount++;
+            if(mode == "merged") {
+                fprintf(outputFile1,"%lf %lf %lf\n", 
+                        point.p[0],  point.p[1], point.p[2]);
+                fprintf(outputFile1, "0 0 0\n");
+                fprintf(outputFile1, "%d", track.size());
+                for(int i=0; i < track.size(); i++) {
+                    fprintf(outputFile1, " %d", track[i].viewId);
+                    fprintf(outputFile1, " %d", track[i].siftId);
+                    fprintf(outputFile1, " %lf", track[i].xcord);
+                    fprintf(outputFile1, " %lf", track[i].ycord);    
+                }
+                fprintf(outputFile1,"\n");
+            }
             fprintf(outputFile, "%d", track.size());
-            fprintf(outputFile1, "%d", track.size());
             for(int i=0; i < track.size(); i++) {
                 fprintf(outputFile, " %d", track[i].viewId);
                 fprintf(outputFile, " %d", track[i].siftId);
                 fprintf(outputFile, " %lf", track[i].xcord);
-                fprintf(outputFile, " %lf", track[i].ycord);
-                
-                fprintf(outputFile1, " %d", track[i].viewId);
-                fprintf(outputFile1, " %d", track[i].siftId);
+                fprintf(outputFile, " %lf", track[i].ycord);    
             }
             fprintf(outputFile," %lf %lf %lf\n", 
                     point.p[0],  point.p[1], point.p[2]);
-            fprintf(outputFile1,"\n");
+//            fprintf(outputFile1,"\n");
         }
         //printf("%d...", finalTrackCount);
     }
     fclose(inputFile);
     fclose(outputFile);
-    fclose(outputFile1);
+    if(outputFile1)
+        fclose(outputFile1);
     printf("Done writing triangulated tracks for image %d, Initial  %d, Final %d\n",
             imageIdx, initialTrackCount, finalTrackCount);
     return 0;

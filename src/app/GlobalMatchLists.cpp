@@ -373,7 +373,7 @@ int main(int argc, char* argv[]) {
     }
     
     clock_t end = clock();    
-    printf("[KeyMatchGeoAware] Reading keys took %0.3fs\n", 
+    printf("[KeyMatchGlobal] Reading keys took %0.3fs\n", 
             (end - start) / ((double) CLOCKS_PER_SEC));
 
 
@@ -388,7 +388,7 @@ int main(int argc, char* argv[]) {
             refIdx = candidatePairs[i].first;
         }
 
-        printf("[KeyMatchGeoAware] Matching image %d - %d\n", srcIdx, refIdx);
+        printf("[KeyMatchGlobal] Matching image %d - %d\n", srcIdx, refIdx);
         fflush(stdout);
         start = clock();
 
