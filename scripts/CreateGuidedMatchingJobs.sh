@@ -16,15 +16,15 @@ IMAGE_DIR=$4
 NUM_NEAR=$5
 NUM_LISTS=$6
 BIN_PATH=$7
-
-if [ $# -ne 7 ]; then
+DENS_NEW=$8
+if [ $# -ne 8 ]; then
     echo "Incorrect number of input arguments"
     echo "USAGE : BUNDLE_FILE LISTS_DIR DENS_DIR IMAGE_DIR NUM_NEAR NUM_LISTS BIN_PATH"
 #    echo $1 $2 $3 $4 $5 $6 $7
 fi
 
-LIST_DIR=$BASE_DIR/matching_lists/
-MATCHES_DIR=$BASE_DIR/matches_files/
+LIST_DIR=$BASE_DIR/pairs/
+MATCHES_DIR=$BASE_DIR/matches/
 
 rm -rf $LIST_DIR
 rm -rf $MATCHES_DIR
@@ -34,7 +34,7 @@ mkdir $MATCHES_DIR
 # For the first iteration, do not pass --query_list 
 # For later iterations, pass the list of newly localized images as --query_list
 
-if [ -e $BUNDLE_DIR/localized_queries.txt ]; then
+if [ $DENS_NEW -eq 1 ]; then
     echo "Creating limited guided match lists for localized imgs"
     $BIN_PATH/CreateGuidedMatchPairs --bundle_dir=$BUNDLE_DIR --base_dir=$BASE_LIST_PATH --result_dir=$LIST_DIR --nn_images=$NUM_NEAR --num_lists=$NUM_LISTS --query_list=$BUNDLE_DIR/localized_queries.txt
 else

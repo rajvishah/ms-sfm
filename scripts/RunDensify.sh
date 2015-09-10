@@ -5,6 +5,7 @@ prevDir=$3
 imageDir=$4
 scriptPath=$5
 binPath=$6
+densifyNew=$7
 
 
 source $scriptPath/SbatchCaller.sh
@@ -21,10 +22,10 @@ if [ $nNear -le 20 ]; then
 fi
 
 # Create jobs for guided matching and run
-$scriptPath/CreateGuidedMatchingJobs.sh $prevDir $baseDir $densDir $imageDir $nNear 200 $binPath 
+$scriptPath/CreateGuidedMatchingJobs.sh $prevDir $baseDir $densDir $imageDir $nNear 200 $binPath $densifyNew
 
 CALL_SBATCH $densDir/guidedmatch_array_jobs.sh
-cat $densDir/matches_files/matches*.txt > matches.txt
+cat $densDir/matches/matches*.txt > matches.txt
 
 # Add verification and timing print here
 #rm $densDir/matches_files/matches*.txt

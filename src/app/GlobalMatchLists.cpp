@@ -373,7 +373,7 @@ int main(int argc, char* argv[]) {
     }
     
     clock_t end = clock();    
-    printf("[KeyMatchGlobal] Reading keys took %0.3fs\n", 
+    printf("[KeyMatchGlobal] Reading keys took %0.3fs \n", 
             (end - start) / ((double) CLOCKS_PER_SEC));
 
 
@@ -452,10 +452,12 @@ int main(int argc, char* argv[]) {
 
         int numMatches = matches.size(); 
         if(!skipPair && numMatches >= 4 && numMatches < 16 && !allQueriesDone) {
-            for(int q=numQueries; q < 3*numQueries; q++) {
+            for(int q=numQueries; q < 2*numQueries; q++) {
                 unsigned char* qKey = srcKeys + 128*q;
-                
+               
+            
                 bool status = true;
+                /*
                 // *****************************************
                 std::vector<float> siftdesc(128) ;
                 std::vector<float> predRes(rtrees.params.n_classes);
@@ -468,6 +470,7 @@ int main(int argc, char* argv[]) {
                 if(!status) {
                     continue;
                 }
+                */
 
                 int matchingPt = SearchInMultiscaleKdtree( newPair, 
                         qKey, refTrees[treeIdx], numFeatures[treeIdx]); 

@@ -412,11 +412,11 @@ int main(int argc, char* argv[]) {
     FILE* outputFile1 = NULL;
     char file1[1000], file2[1000], file3[1000];
     if(mode == "merged") {
-        sprintf(file1, "%s/merged-tracks.txt", trackDir.c_str(), imageIdx);
+        sprintf(file1, "%s/merged-tracks.txt", trackDir.c_str());
         sprintf(file2, "%s/triangulated-tracks-final.txt", 
-                trackDir.c_str(), imageIdx);
+                trackDir.c_str());
         sprintf(file3, "%s/bundle-triangulated_tracks-final.txt", 
-                trackDir.c_str(), imageIdx);
+                trackDir.c_str());
         
         outputFile1 = fopen(file3, "w");
         if(outputFile1 == NULL) {
