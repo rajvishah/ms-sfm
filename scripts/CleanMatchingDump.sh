@@ -52,8 +52,8 @@ CLEAN_DUMP() {
     rm -f time_acc
     rm -f pair_acc
 
-    #rm $logFileRegex
-    #rm $logErrFileRegex
+    rm $logFileRegex
+    rm $logErrFileRegex
 
     currDir=`pwd`
     if [ -d $baseDir/matches ]; then
@@ -61,7 +61,7 @@ CLEAN_DUMP() {
         echo "Writing Matches"
         cat *matches*.txt > $baseDir/matches.txt
         cd ..
-        #rm -r matches
+        rm -r matches
     fi
 
     cd $currDir
@@ -69,7 +69,7 @@ CLEAN_DUMP() {
         cd $baseDir/pairs/
         cat *pairs*.txt > $baseDir/all_pairs.txt
         cd ..
-        #rm -r pairs
+        rm -r pairs
     fi
     
     cd $currDir
@@ -77,9 +77,18 @@ CLEAN_DUMP() {
         cd $baseDir/ranks/
         cat *ranks*.txt > $baseDir/all_ranks.txt
         cd ..
-        #rm -r ranks
+        rm -r ranks
     fi
    
+    cd $currDir
+    if [ -d $baseDir/tracks ]; then
+        cd $baseDir/tracks/
+        cat long-tracks*.txt > $baseDir/long-tracks.txt
+        cat triangulated-tracks*.txt > $baseDir/triangulated-tracks.txt
+        cd ..
+        rm -r tracks
+    fi
+    
     echo "Cleaned " $prefix " dump"
     return $retVal
 }

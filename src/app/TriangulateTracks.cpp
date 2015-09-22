@@ -467,6 +467,8 @@ int main(int argc, char* argv[]) {
 
     int trackLength;
     int initialTrackCount = 0, finalTrackCount = 0;
+    
+    long long int totalClock = 0;
 
     while( fscanf(inputFile, "%d", &trackLength)!= EOF) {  
         initialTrackCount++;
@@ -483,7 +485,11 @@ int main(int argc, char* argv[]) {
         }
 
         v3_t point;
+        clock_t start = clock();
         bool status = triangulateTrack(&bdl, imList, track, point,angleVerify);
+        clock_t end = clock();
+
+        totalClock += (end - start);
         if(status) {
             finalTrackCount++;
             if(mode == "merged") {
@@ -516,6 +522,8 @@ int main(int argc, char* argv[]) {
     fclose(outputFile);
     if(outputFile1)
         fclose(outputFile1);
+    printf("[TriangulateTracks] Triangulation took %0.6fs\n", 
+            totalClock / ((double) CLOCKS_PER_SEC));
     printf("Done writing triangulated tracks for image %d, Initial  %d, Final %d\n",
             imageIdx, initialTrackCount, finalTrackCount);
     return 0;

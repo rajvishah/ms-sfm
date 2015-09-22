@@ -158,6 +158,8 @@ int main(int argc, char* argv[]) {
             (end2 - start2) / ((double) CLOCKS_PER_SEC));
     printf("[MakeTracks] Finding tracks took %0.6fs\n", 
             (end3 - start3) / ((double) CLOCKS_PER_SEC));
+    printf("[MakeTracks] Making tracks took %0.6fs\n", 
+            (end3 - start2) / ((double) CLOCKS_PER_SEC));
     printf("[MakeTracks] Writing file took %0.6fs\n", 
             (end4 - start4) / ((double) CLOCKS_PER_SEC));
     return 0;

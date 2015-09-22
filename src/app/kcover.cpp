@@ -268,6 +268,7 @@ void kcover::WriteCover() {
     double* P_orig = new double[num_images*12];
 	for (int i = 0; i < num_images; i++) {
         range.push_back(i);
+        
 		double focal_length;
 		double R[9];
 		double t[3];
@@ -282,7 +283,14 @@ void kcover::WriteCover() {
 
 		if (version > 0.1) {
 			fscanf(f, "%lf %lf %lf\n", &focal_length, k+0, k+1);
-			fprintf(fw, "%lf %lf %lf\n", focal_length, *(k+0), *(k+1));
+            if(!validIds[i]) {
+                fprintf(fw,"0 0 0\n"); 
+            } else {
+    			fprintf(fw, "%lf %lf %lf\n", focal_length, *(k+0), *(k+1));
+            }
+
+
+
 		} else {
 			fscanf(f, "%lf\n", &focal_length);
 			fprintf(fw, "%lf\n", focal_length);
@@ -291,11 +299,19 @@ void kcover::WriteCover() {
 		fscanf(f, "%lf %lf %lf\n%lf %lf %lf\n%lf %lf %lf\n",
 				&camset[i].R[0], &camset[i].R[1], &camset[i].R[2], &camset[i].R[3], &camset[i].R[4], &camset[i].R[5], &camset[i].R[6], &camset[i].R[7], &camset[i].R[8]);
 
+        if(!validIds[i]) {
+            fprintf(fw,"0 0 0\n0 0 0\n0 0 0\n"); 
+        } else {
 		fprintf(fw, "%lf %lf %lf\n%lf %lf %lf\n%lf %lf %lf\n",
 				camset[i].R[0], camset[i].R[1], camset[i].R[2], camset[i].R[3], camset[i].R[4], camset[i].R[5], camset[i].R[6], camset[i].R[7], camset[i].R[8]);
+        }
 
 		fscanf(f, "%lf %lf %lf\n", &t[0],&t[1],&t[2]);
-		fprintf(fw, "%lf %lf %lf\n", t[0],t[1],t[2]);
+        if(!validIds[i]) {
+            fprintf(fw,"0 0 0\n"); 
+        } else {
+            fprintf(fw, "%lf %lf %lf\n", t[0],t[1],t[2]);
+        }
 	}
 
     printf("[ReadBundleFile] Reading %d point parameters\n", num_points);
