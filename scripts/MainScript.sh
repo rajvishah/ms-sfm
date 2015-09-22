@@ -17,7 +17,7 @@ dens3Dir=$runDir/dens3
 
 source $scriptPath/SbatchCaller.sh
 source $scriptPath/CleanMatchingDump.sh
-source $scriptPath/CleanTrackDump.sh
+#source $scriptPath/CleanTrackDump.sh
 
 #################################################################################
 : '
@@ -48,16 +48,14 @@ cp $cgmDir/bundle/bundle.out $cgmDir/bundle.out
 '
 ###################################################################################
 
-#$scriptPath/RunLocalize.sh $locDir $scriptPath $binPath $cgmDir $cgmDir
+$scriptPath/RunLocalize.sh $locDir $scriptPath $binPath $cgmDir $cgmDir
 
 ###################################################################################
 
 #$scriptPath/RunDensify.sh $densDir $cgmDir $locDir $imageDir $scriptPath $binPath 0
-echo "Cleaning match dump"
-CLEAN_DUMP $densDir "guidedmatch"
-echo "Cleaning track dump"
-CLEAN_TRACK_DUMP $densDir "maketracks"
-if [ $? -eq 0 ]; then PS4=':${LINENO}+'; set -x; exit; fi
+#echo "Cleaning match dump"
+#CLEAN_DUMP $densDir "guidedmatch"
+#echo "Cleaning track dump"
 
 ###################################################################################
 : '
