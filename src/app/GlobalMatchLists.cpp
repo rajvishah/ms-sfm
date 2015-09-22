@@ -10,13 +10,14 @@
 #include <time.h>
 #include <cstddef>
 
+/*
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/iostreams/filtering_stream.hpp>
 #include <boost/iostreams/filter/gzip.hpp>
 
 #include "../thirdparty/predict_match/random-forest/node-gini.hpp"
 #include "../thirdparty/predict_match/random-forest/forest.hpp"
-
+*/
 #include "../base/keys2a.h"
 #include "../base/argvparser.h"
 
@@ -261,6 +262,7 @@ int main(int argc, char* argv[]) {
 
    //******************************************
    //*********** Predict Matchability Prepare 
+   /*
     liblearning::RandomForest::RandomForest< liblearning::RandomForest::NodeGini<liblearning::RandomForest::AxisAlignedSplitter> > rtrees ;
     
 	std::ifstream ifs("/home/cvit/rajvi/ms-sfm/ms-sfm/src/thirdparty/predict_match/rforest.gz", std::ios_base::in | std::ios_base::binary) ;
@@ -273,6 +275,7 @@ int main(int argc, char* argv[]) {
 	ins.push(ifs) ;
 	boost::archive::text_iarchive ias(ins) ;
 	ias >> BOOST_SERIALIZATION_NVP(rtrees) ;
+    */
    //******************************************
 
 
@@ -451,7 +454,7 @@ int main(int argc, char* argv[]) {
         }
 
         int numMatches = matches.size(); 
-        if(!skipPair && numMatches >= 4 && numMatches < 16 && !allQueriesDone) {
+        if(!skipPair && numMatches >= 4 && !allQueriesDone) {
             for(int q=numQueries; q < 2*numQueries; q++) {
                 unsigned char* qKey = srcKeys + 128*q;
                

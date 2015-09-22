@@ -3,6 +3,7 @@
 #include "keys2a.h"
 #include "Geometric.h"
 
+#include <set>
 /*
  * Author : Rajvi Shah (rajvi.a.shah@gmail.com)
  * SIFT-like feature matching implementation introduced in the following paper:
@@ -306,7 +307,7 @@ int FeatureMatcher:: bfMatch() {
         if(probMatches.size() == 0) {
             continue;
         }
-
+        
         ///  For each points within a cluster, find descriptor space distance 
         ///  from all the points in the candidate set (probMatches) 
         ///  Inster the points in a map, to sort in order of distance
@@ -487,6 +488,23 @@ void FeatureMatcher::getProbableMatches(int idx, vector<int>& probMatches) {
     }
 
     rGrid->getGridPoints(x, y, probMatches);
+
+    // If probable matches are too few, ratio-test is meaning less and 
+    // can generate false positives and add noise
+    // Add a random set of points as candidates in this case
+    if(probMatches.size() > 0 && probMatches.size() < 50) {
+        set<int> randIndices;
+        set<int>::iterator setItr;
+        pair<set<int>::iterator,bool> ret;
+
+        while(probMatches.size() < 50) {
+            int rand_index = rand() % numRefPts; 
+            ret = randIndices.insert( rand_index );
+            if(ret.second == true) {
+                probMatches.push_back(rand_index);
+            }
+        }
+    }
 }
 
 

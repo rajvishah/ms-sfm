@@ -5,19 +5,22 @@ CFLAGS=-O3 -w -c -Wall
 # Change the path in the following to your ANN and zlib distribution paths
 # Alternatively, copy the lib and .h files to your global lib and include paths
 
-LIBPATH=-L/home/cvit/rajvi/bundler/lib/ann_1.1_char/lib/ -L/home/cvit/rajvi/bundler/lib/zlib/lib -L/home/cvit/rajvi/local_libs/lib/ -L/home/cvit/rajvi/bundler/lib/ -L/home/cvit/rajvi/bundler/lib/sfm-driver/  -L/usr/lib64 -L/usr/lib64/atlas/ -L/global/OpenBLAS/lib/ -L/global/boost/1.55.0/lib 
+LIBPATH=-L/home/cvit/rajvi/bundler/lib/ann_1.1_char/lib/ -L/home/cvit/rajvi/bundler/lib/zlib/lib -L/home/cvit/rajvi/local_libs/lib/ -L/home/cvit/rajvi/bundler/lib/ -L/home/cvit/rajvi/bundler/lib/sfm-driver/  -L/usr/lib64 -L/usr/lib64/atlas/ -L/global/OpenBLAS/lib/ 
 
 IFLAGS=-I/home/cvit/rajvi/bundler/lib/ann_1.1_char/include/ -I../lib/zlib/include/ -I/home/cvit/rajvi/local_libs/include/ -I/home/cvit/rajvi/bundler/lib/sfm-driver/ -I/home/cvit/rajvi/bundler/lib/imagelib/ -I /global/boost/1.55.0/include/ 
 
-LIBS=-lsfmdrv -limage -lsba.v1.5 -lANN_char -lz -lmatrix -lcblas -llapack -lminpack -ljpeg -lboost_iostreams -lboost_serialization 
+#LIBS=-lsfmdrv -limage -lsba.v1.5 -lANN_char -lz -lmatrix -lcblas -llapack -lminpack -ljpeg -lboost_iostreams -lboost_serialization 
+LIBS=-lsfmdrv -limage -lsba.v1.5 -lANN_char -lz -lmatrix -lcblas -llapack -lminpack -ljpeg 
 
 PKGCONFIGFLAG=`pkg-config --cflags --libs opencv`
 
-default: localizer CreateGuidedMatchPairs GuidedMatchLists CreateGlobalMatchPairs GlobalMatchLists make_tracks triangulate_tracks merge_cameras merge_tracks KeyMatchFull 
-	mv -t ../../bin localizer CreateGuidedMatchPairs GuidedMatchLists make_tracks triangulate_tracks merge_cameras merge_tracks CreateGlobalMatchPairs GlobalMatchLists KeyMatchFull 
+default: localizer CreateGuidedMatchPairs GuidedMatchLists CreateGlobalMatchPairs GlobalMatchLists make_tracks triangulate_tracks merge_cameras merge_tracks KeyMatchFull matcher3d_2d 
+	mv -t ../../bin localizer CreateGuidedMatchPairs GuidedMatchLists make_tracks triangulate_tracks merge_cameras merge_tracks CreateGlobalMatchPairs GlobalMatchLists KeyMatchFull matcher3d_2d 
 localizer: Match3Dto2D.o ../base/Localize.o ../base/ImageData.o ../base/Camera.o ../base/ImageSize.o ../base/keys2a.o ../base/Reader.o ../base/Bundle.o
 	$(CC) $(IFLAGS) Match3Dto2D.o ../base/Localize.o ../base/ImageData.o ../base/Camera.o ../base/ImageSize.o ../base/keys2a.o ../base/Reader.o ../base/Bundle.o $(LIBPATH) $(PKGCONFIGFLAG)-Wall -o localizer $(LIBS)
 
+matcher3d_2d: Match_3D_2D.o ../base/ImageData.o ../base/ImageSize.o ../base/keys2a.o ../base/Reader.o ../base/Bundle.o
+	$(CC) $(IFLAGS) Match_3D_2D.o  ../base/ImageData.o ../base/ImageSize.o ../base/keys2a.o ../base/Reader.o ../base/Bundle.o $(LIBPATH) $(PKGCONFIGFLAG)-Wall -o matcher3d_2d $(LIBS)
 
 CreateGlobalMatchPairs: CreateGlobalMatchPairs.o ../base/keys2a.o ../base/argvparser.o ../base/MatchPairs.o ../base/Reader.o
 	$(CC) $(IFLAGS) CreateGlobalMatchPairs.o ../base/keys2a.o ../base/argvparser.o ../base/Reader.o $(LIBPATH) $(PKGCONFIGFLAG)-Wall -o CreateGlobalMatchPairs $(LIBS)
@@ -66,6 +69,9 @@ MergeTracks.o:MergeTracks.cpp
 
 MergeCameras.o:MergeCameras.cpp
 	$(CC) $(CFLAGS) $(IFLAGS) MergeCameras.cpp
+
+Match_3D_2D.o:Match_3D_2D.cpp
+	$(CC) $(CFLAGS) $(IFLAGS) Match_3D_2D.cpp
 
 Match3Dto2D.o:Match3Dto2D.cpp
 	$(CC) $(CFLAGS) $(IFLAGS) Match3Dto2D.cpp

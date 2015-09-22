@@ -228,7 +228,7 @@ v2_t UndistortNormalizedPoint(v2_t p, double* kinv)  {
 
 
 bool triangulateTrack(bundle::Bundle* bdl, reader::ImageListReader& imList, 
-        vector<pointstr> &trackDetails, v3_t& ptOut) { 
+        vector<pointstr> &trackDetails, v3_t& ptOut, bool angleVerify) { 
     int tsize = trackDetails.size();
 
     static int tcount = 0;
@@ -306,6 +306,7 @@ bool triangulateTrack(bundle::Bundle* bdl, reader::ImageListReader& imList,
     }
 
     double error;
+    v3_t pt2_beg = v3_new(0, 0, 0);
     v3_t pt2 = v3_new(0, 0, 0);
 
     /*
@@ -323,7 +324,8 @@ bool triangulateTrack(bundle::Bundle* bdl, reader::ImageListReader& imList,
        */
 
     pt2 = triangulate_n(tsize, pv, Rin, tin, &error);
-
+    //pt2_beg = triangulate_n(tsize, pv, Rin, tin, &error);
+    //pt2 = triangulate_n_refine(pt2_beg, tsize, pv, Rin, tin, &error);
 
     ptOut = pt2;
 
@@ -343,8 +345,10 @@ bool triangulateTrack(bundle::Bundle* bdl, reader::ImageListReader& imList,
 
         //double repErr = geometry::computeReproject(pt, proPt, Rin+j*9, tin+j*3, focLen);
 
-        // Last two argument different in Aditya's code
-        v2_t pr = sfm_project_final(Rin+j*9, tlocs+j*3, focLen, k, pt2, 1, 1);
+        // Last two argument different (..., 0, 1) in Aditya's merging code
+        // This depends on t is passed or cam center (tin vs tLocs)
+        v2_t pr = sfm_project_final(Rin+j*9, tin+j*3, focLen, k, pt2, 0, 1);
+        //v2_t pr = sfm_project_final(Rin+j*9, tlocs+j*3, focLen, k, pt2, 1, 1);
 
         double dx = Vx(pr) - x_cordf[j];
         double dy = Vy(pr) -  y_cordf[j];
@@ -354,17 +358,16 @@ bool triangulateTrack(bundle::Bundle* bdl, reader::ImageListReader& imList,
     }
 
     totalErr = sqrt((totalErr*1.0)/tsize);
-    bool goodness = false;
+    bool goodness = true;
     //    printf("\n%d error %lf, repError %lf, Cheirality %d", tcount, error, totalErr, status);
     tcount++;
     //printf("Total Error: %lf, Cheirality Status :%d", totalErr, status);
-    if(status && totalErr < 16.0) { 
-        return true;
-        //goodness = RemoveBadPointsAndCameras(bdl, pt2, pt_views);
-        //printf(", Angular goodness %d", goodness);
+    if(status && totalErr <= 16.0) {
+        if(angleVerify) {
+            goodness = RemoveBadPointsAndCameras(bdl, pt2, pt_views);
+        }
+        return goodness;
     }
-    //printf("\n");
-
     return false;
 }
 
@@ -411,7 +414,10 @@ int main(int argc, char* argv[]) {
 
     FILE* outputFile1 = NULL;
     char file1[1000], file2[1000], file3[1000];
+
+    bool angleVerify = false;
     if(mode == "merged") {
+        angleVerify = true;
         sprintf(file1, "%s/merged-tracks.txt", trackDir.c_str());
         sprintf(file2, "%s/triangulated-tracks-final.txt", 
                 trackDir.c_str());
@@ -477,7 +483,7 @@ int main(int argc, char* argv[]) {
         }
 
         v3_t point;
-        bool status = triangulateTrack(&bdl, imList, track, point);
+        bool status = triangulateTrack(&bdl, imList, track, point,angleVerify);
         if(status) {
             finalTrackCount++;
             if(mode == "merged") {

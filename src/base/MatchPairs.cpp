@@ -345,7 +345,7 @@ bool MatchPairs::matchListPairs(string& listPath ,string& resultDir) {
 
     fclose(currFile);
     clock_t end = clock();    
-    printf("[KeyMatchGeoAware] Matching took %0.3fs for %s\n", 
+    printf("[KeyMatchGeoAware] For %s: Matching took %0.3fs\n", 
             (end - start) / ((double) CLOCKS_PER_SEC), listPath.c_str());
     fflush(stdout);
     return true;
