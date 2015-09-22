@@ -16,7 +16,7 @@ using namespace std;
 int main( int argc, char* argv[]) {
 
     if(argc < 5) {
-        printf("Usage : ./matcher_3d_2d <bundlePath> <listPath> <queryImagePath> <rankFilePath> <outPath> <queryIdx>\n");
+        printf("Usage : ./matcher_3d_2d <bundlePath> <listPath> <queryImagePath> <rankFilePath> <outPath> <queryIdx> <nearbyNum>\n");
         return -1;
     }
 
@@ -113,13 +113,13 @@ int main( int argc, char* argv[]) {
         }
     }
     clock_t end1 = clock();    
-    printf("[Match_3D_2D] Reading various list files took %0.6fs\n", 
+    printf("\n[Match_3D_2D] Reading various list files took %0.6fs\n", 
             (end1 - start1) / ((double) CLOCKS_PER_SEC));
 
     clock_t start2 = clock();
     sort(allNearbyImages.begin(), allNearbyImages.end(), greater<pair <int,int> >());
     clock_t end2 = clock();    
-    printf("[Match_3D_2D] Sorting ranks files took %0.6fs\n", 
+    printf("\n[Match_3D_2D] Sorting ranks files took %0.6fs\n", 
             (end2 - start2) / ((double) CLOCKS_PER_SEC));
 
     int maxNearby = numMaxNearby < allNearbyImages.size() ? numMaxNearby : allNearbyImages.size(); 
@@ -141,7 +141,7 @@ int main( int argc, char* argv[]) {
     ANNkd_tree *tree = CreateSearchTree( numRefKeys, refKeys);
     annMaxPtsVisit(300);
     clock_t end3 = clock();    
-    printf("[Match_3D_2D] Creating query search tree took %0.6fs\n", 
+    printf("\n[Match_3D_2D] Creating query search tree took %0.6fs\n", 
             (end3 - start3) / ((double) CLOCKS_PER_SEC));
 
     clock_t start4 = clock();
@@ -179,7 +179,7 @@ int main( int argc, char* argv[]) {
 
     printf("\nFound total %d 3D points", pt2TrackMap.size());
     clock_t end4 = clock();    
-    printf("[Match_3D_2D] Reading nearby keys and forming tracks took %0.6fs\n", 
+    printf("\n[Match_3D_2D] Reading nearby keys and forming tracks took %0.6fs\n", 
             (end4 - start4) / ((double) CLOCKS_PER_SEC));
 
     clock_t start5 = clock();
@@ -254,7 +254,7 @@ int main( int argc, char* argv[]) {
         }
     }
     clock_t end5 = clock();    
-    printf("[Match_3D_2D] 3D_2D_search took %0.6fs\n", 
+    printf("\n[Match_3D_2D] 3D_2D_search took %0.6fs\n", 
             (end5 - start5) / ((double) CLOCKS_PER_SEC));
 
     printf("\nFound %d matches", matches3D_2D.size()); 
@@ -277,7 +277,7 @@ int main( int argc, char* argv[]) {
    
     stringstream stream1;
     stream1 << corrFilePath 
-        << "matches_3D-2D_img-" << setw(4) << setfill('0') 
+        << "/matches_3D-2D_img-" << setw(4) << setfill('0') 
         << imageIdx << ".txt"; 
     string corrFileName = stream1.str();
     ofstream corrFile(corrFileName.c_str(), std::ofstream::out);
@@ -314,12 +314,12 @@ int main( int argc, char* argv[]) {
         corrFile << Vz(p3) << " ";
     }
     clock_t end6 = clock();    
-    printf("[Match_3D_2D] Writing 3D_2D corr took %0.6fs\n", 
+    printf("\n[Match_3D_2D] Writing 3D_2D corr took %0.6fs\n", 
             (end6 - start6) / ((double) CLOCKS_PER_SEC));
 
     printf("\nFound %d good 3D-2D correspondences\n", finalMatches2.size());
     
-    printf("[Match_3D_2D]  Total search for 3D_2D corr took %0.6fs\n", 
+    printf("\n[Match_3D_2D]  Total search for 3D_2D corr took %0.6fs\n", 
             (end6 - start1) / ((double) CLOCKS_PER_SEC));
 
     return -1;

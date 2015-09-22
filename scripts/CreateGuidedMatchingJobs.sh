@@ -36,7 +36,7 @@ mkdir $MATCHES_DIR
 
 if [ $DENS_NEW -eq 1 ]; then
     echo "Creating limited guided match lists for localized imgs"
-    $BIN_PATH/CreateGuidedMatchPairs --bundle_dir=$BUNDLE_DIR --base_dir=$BASE_LIST_PATH --result_dir=$LIST_DIR --nn_images=$NUM_NEAR --num_lists=$NUM_LISTS --query_list=$BUNDLE_DIR/localized_queries.txt
+    $BIN_PATH/CreateGuidedMatchPairs --bundle_dir=$BUNDLE_DIR --base_dir=$BASE_LIST_PATH --result_dir=$LIST_DIR --nn_images=$NUM_NEAR --num_lists=$NUM_LISTS --query_list=$BUNDLE_DIR/localized_queries_final.txt
 else
     $BIN_PATH/CreateGuidedMatchPairs --bundle_dir=$BUNDLE_DIR --base_dir=$BASE_LIST_PATH --result_dir=$LIST_DIR --nn_images=$NUM_NEAR --num_lists=$NUM_LISTS
 fi

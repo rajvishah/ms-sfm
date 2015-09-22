@@ -28,7 +28,7 @@ CLEAN_DUMP() {
 
     for file in $logFileRegex;
     do
-        timePerScr=`grep -Po '(?<=Matching took).*(?=s )' $file | paste -sd+ - | bc`
+        timePerScr=`grep -Po '(?<=Matching took).*(?=s)' $file | paste -sd+ - | bc`
         pairsPerScr=`grep "Writing" $file | wc -l`
 
         echo $timePerScr >> time_acc

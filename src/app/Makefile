@@ -14,8 +14,8 @@ LIBS=-lsfmdrv -limage -lsba.v1.5 -lANN_char -lz -lmatrix -lcblas -llapack -lminp
 
 PKGCONFIGFLAG=`pkg-config --cflags --libs opencv`
 
-default: localizer CreateGuidedMatchPairs GuidedMatchLists CreateGlobalMatchPairs GlobalMatchLists make_tracks triangulate_tracks merge_cameras merge_tracks KeyMatchFull matcher3d_2d 
-	mv -t ../../bin localizer CreateGuidedMatchPairs GuidedMatchLists make_tracks triangulate_tracks merge_cameras merge_tracks CreateGlobalMatchPairs GlobalMatchLists KeyMatchFull matcher3d_2d 
+default: localizer CreateGuidedMatchPairs GuidedMatchLists CreateGlobalMatchPairs GlobalMatchLists make_tracks triangulate_tracks merge_cameras merge_tracks KeyMatchFull matcher3d_2d kcover 
+	mv -t ../../bin localizer CreateGuidedMatchPairs GuidedMatchLists make_tracks triangulate_tracks merge_cameras merge_tracks CreateGlobalMatchPairs GlobalMatchLists KeyMatchFull matcher3d_2d kcover
 localizer: Match3Dto2D.o ../base/Localize.o ../base/ImageData.o ../base/Camera.o ../base/ImageSize.o ../base/keys2a.o ../base/Reader.o ../base/Bundle.o
 	$(CC) $(IFLAGS) Match3Dto2D.o ../base/Localize.o ../base/ImageData.o ../base/Camera.o ../base/ImageSize.o ../base/keys2a.o ../base/Reader.o ../base/Bundle.o $(LIBPATH) $(PKGCONFIGFLAG)-Wall -o localizer $(LIBS)
 
@@ -27,6 +27,10 @@ CreateGlobalMatchPairs: CreateGlobalMatchPairs.o ../base/keys2a.o ../base/argvpa
 
 KeyMatchFull: KeyMatchFull.o ../base/keys2a.o ../base/argvparser.o ../base/Reader.o
 	$(CC) $(IFLAGS) KeyMatchFull.o ../base/keys2a.o ../base/argvparser.o ../base/Reader.o $(LIBPATH) $(PKGCONFIGFLAG)-Wall -o KeyMatchFull $(LIBS)
+
+
+kcover: kcover.o 
+	$(CC) $(IFLAGS) kcover.o $(LIBPATH) $(PKGCONFIGFLAG)-Wall -o kcover $(LIBS)
 
 GlobalMatchLists: GlobalMatchLists.o ../base/keys2a.o ../base/argvparser.o ../base/Reader.o
 	$(CC) $(IFLAGS) GlobalMatchLists.o ../base/keys2a.o ../base/argvparser.o ../base/Reader.o $(LIBPATH) $(PKGCONFIGFLAG)-Wall -o GlobalMatchLists $(LIBS)
@@ -75,6 +79,9 @@ Match_3D_2D.o:Match_3D_2D.cpp
 
 Match3Dto2D.o:Match3Dto2D.cpp
 	$(CC) $(CFLAGS) $(IFLAGS) Match3Dto2D.cpp
+
+kcover.o : kcover.cpp
+	$(CC) $(CFLAGS) $(IFLAGS) kcover.cpp 
 
 MakeTracks.o : MakeTracks.cpp 
 	$(CC) $(CFLAGS) $(IFLAGS) MakeTracks.cpp 
