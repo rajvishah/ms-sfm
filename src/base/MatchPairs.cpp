@@ -10,13 +10,6 @@
 #include <time.h>
 using namespace sfm;
 
-typedef struct pointStruct { 
-    int viewId;
-    int siftId;
-    double xcord;
-    double ycord;
-}pointstr;
-
 
 MatchPairs::MatchPairs(string& bundleDir, 
         string& baseDir, int numNearby) :

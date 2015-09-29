@@ -5,12 +5,14 @@ CFLAGS=-O3 -w -c -Wall
 # Change the path in the following to your ANN and zlib distribution paths
 # Alternatively, copy the lib and .h files to your global lib and include paths
 
-LIBPATH=-L/home/cvit/rajvi/bundler/lib/ann_1.1_char/lib/ -L/home/cvit/rajvi/bundler/lib/zlib/lib -L/home/cvit/rajvi/local_libs/lib/ -L/home/cvit/rajvi/bundler/lib/ -L/home/cvit/rajvi/bundler/lib/sfm-driver/  -L/usr/lib64 -L/usr/lib64/atlas/ -L/global/OpenBLAS/lib/ 
+BUNDLER_PATH=/home/rajvi/Bundler/
 
-IFLAGS=-I/home/cvit/rajvi/bundler/lib/ann_1.1_char/include/ -I../lib/zlib/include/ -I/home/cvit/rajvi/local_libs/include/ -I/home/cvit/rajvi/bundler/lib/sfm-driver/ -I/home/cvit/rajvi/bundler/lib/imagelib/ -I /global/boost/1.55.0/include/ 
+LIBPATH=-L$(BUNDLER_PATH)/lib/ann_1.1_char/lib/ -L$(BUNDLER_PATH)/lib/zlib/lib -L/home/rajvi/local_libs/lib/ -L$(BUNDLER_PATH)/lib/ -L$(BUNDLER_PATH)/lib/sfm-driver/  -L/usr/lib64 -L/usr/lib64/atlas/ -L/global/OpenBLAS/lib/ 
 
-#LIBS=-lsfmdrv -limage -lsba.v1.5 -lANN_char -lz -lmatrix -lcblas -llapack -lminpack -ljpeg -lboost_iostreams -lboost_serialization 
-LIBS=-lsfmdrv -limage -lsba.v1.5 -lANN_char -lz -lmatrix -lcblas -llapack -lminpack -ljpeg 
+IFLAGS=-I$(BUNDLER_PATH)/lib/ann_1.1_char/include/ -I../lib/zlib/include/ -I/home/rajvi/local_libs/include/ -I$(BUNDLER_PATH)/lib/sfm-driver/ -I$(BUNDLER_PATH)/lib/imagelib/ -I$(BUNDLER_PATH)/lib/matrix/
+
+#LIBS=-lsfmdrv -limage -lsba.v1.5 -lANN_char -lz -lmatrix -lcblas -llapack -lminpack -ljpeg 
+LIBS=-lsfmdrv -limage -lsba.v1.5 -lANN_char -lz -lmatrix -lblas -lcblas -llapack -lminpack -ljpeg 
 
 PKGCONFIGFLAG=`pkg-config --cflags --libs opencv`
 
@@ -56,8 +58,8 @@ CreateGuidedMatchPairs.o: CreateGuidedMatchPairs.cpp ../base/Reader.cpp ../base/
 GuidedMatchLists.o: GuidedMatchLists.cpp ../base/Reader.cpp ../base/Reader.h ../base/Bundle.cpp ../base/Bundle.h ../base/Gridder.cpp ../base/Gridder.h ../base/defs.h ../base/Geometric.cpp ../base/Geometric.h ../base/Matcher.cpp ../base/Matcher.h ../base/argvparser.cpp ../base/argvparser.h ../base/MatchPairs.cpp ../base/MatchPairs.h
 	$(CC) $(CFLAGS) $(IFLAGS) GuidedMatchLists.cpp
 
-triangulate_tracks: TriangulateTracks.o ../base/argvparser.o ../base/Reader.o ../base/Bundle.o
-	$(CC) TriangulateTracks.o ../base/argvparser.o ../base/Reader.o ../base/Bundle.o $(LIBPATH) -Wall -o triangulate_tracks $(LIBS)
+triangulate_tracks: TriangulateTracks.o ../base/argvparser.o ../base/Reader.o ../base/Bundle.o ../base/Triangulater.o
+	$(CC) TriangulateTracks.o ../base/argvparser.o ../base/Reader.o ../base/Bundle.o ../base/Triangulater.o $(LIBPATH) -Wall -o triangulate_tracks $(LIBS)
 
 make_tracks: MakeTracks.o ../base/argvparser.o
 	$(CC) MakeTracks.o ../base/argvparser.o -Wall -o make_tracks

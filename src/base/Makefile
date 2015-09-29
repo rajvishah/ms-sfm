@@ -5,18 +5,23 @@ CFLAGS=-O3 -w -c -Wall
 # Change the path in the following to your ANN and zlib distribution paths
 # Alternatively, copy the lib and .h files to your global lib and include paths
 
-LIBPATH=-L/home/cvit/rajvi/bundler/lib/ann_1.1_char/lib/ -L/home/cvit/rajvi/bundler/lib/zlib/lib -L/home/cvit/rajvi/local_libs/lib/ -L/home/cvit/rajvi/bundler/lib/ -L/home/cvit/rajvi/bundler/lib/sfm-driver/  -L/usr/lib64 -L/usr/lib64/atlas/ -L/global/OpenBLAS/lib/ 
+BUNDLER_PATH=/home/rajvi/Bundler/
 
-IFLAGS=-I/home/cvit/rajvi/bundler/lib/ann_1.1_char/include/ -I../lib/zlib/include/ -I/home/cvit/rajvi/local_libs/include/ -I/home/cvit/rajvi/bundler/lib/sfm-driver/ -I/home/cvit/rajvi/bundler/lib/imagelib/ 
+LIBPATH=-L$(BUNDLER_PATH)/lib/ann_1.1_char/lib/ -L$(BUNDLER_PATH)/lib/zlib/lib -L/home/rajvi/local_libs/lib/ -L$(BUNDLER_PATH)/lib/ -L$(BUNDLER_PATH)/lib/sfm-driver/  -L/usr/lib64 -L/usr/lib64/atlas/ -L/global/OpenBLAS/lib/ 
+
+IFLAGS=-I$(BUNDLER_PATH)/lib/ann_1.1_char/include/ -I../lib/zlib/include/ -I/home/rajvi/local_libs/include/ -I$(BUNDLER_PATH)/lib/sfm-driver/ -I$(BUNDLER_PATH)/lib/imagelib/ -I$(BUNDLER_PATH)/lib/matrix/
 
 LIBS=-lsfmdrv -limage -lsba.v1.5 -lANN_char -lz -lmatrix -lcblas -llapack -lminpack -ljpeg 
 
 PKGCONFIGFLAG=`pkg-config --cflags --libs opencv`
 
-default: Localize.o Reader.o Bundle.o keys2a.o ImageSize.o ImageData.o Camera.o Gridder.o Matcher.o Geometric.o argvparser.o MatchPairs.o 
+default: Triangulater.o Localize.o Reader.o Bundle.o keys2a.o ImageSize.o ImageData.o Camera.o Gridder.o Matcher.o Geometric.o argvparser.o MatchPairs.o 
 
 Localize.o: Localize.cpp Localize.h
 	$(CC) $(CFLAGS) $(IFLAGS) Localize.cpp
+
+Triangulater.o: Triangulater.cpp Triangulater.h
+	$(CC) $(CFLAGS) $(IFLAGS) Triangulater.cpp
 
 Reader.o: Reader.cpp Reader.h
 	$(CC) $(CFLAGS) $(IFLAGS) Reader.cpp

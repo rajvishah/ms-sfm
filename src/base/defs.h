@@ -42,4 +42,10 @@
 #include <iostream>
 using namespace std;
  
+typedef struct pointStruct { 
+    int viewId;
+    int siftId;
+    double xcord;
+    double ycord;
+}pointstr;
 #endif //__DEFS_H 

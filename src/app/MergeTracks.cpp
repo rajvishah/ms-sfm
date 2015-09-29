@@ -18,7 +18,7 @@
 #include "vector.h"
 #include "jpeglib.h"
 #include "triangulate.h"
-#include<flann/flann.hpp>
+//#include<flann/flann.hpp>
 //#include "Geometric.h"
 
 using namespace std;

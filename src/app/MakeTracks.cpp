@@ -35,12 +35,6 @@ typedef struct TrackStruct {
     vector< double > y;
 };
 
-typedef struct pointStruct { 
-    int viewId;
-    int siftId;
-    double xcord;
-    double ycord;
-}pointstr;
 
 int main(int argc, char* argv[]) {
     ArgvParser cmd;
