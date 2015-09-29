@@ -44,7 +44,6 @@ int main(int argc, char* argv[]) {
   }
 
   int numTotalImages = idxMap2.size();
-  printf("\nTotal images are %d", numTotalImages);
   vector< vector<double> > intrinsics(numTotalImages);
   vector< vector<double> > rotations(numTotalImages);
   vector< vector<double> > translations(numTotalImages);
@@ -57,7 +56,6 @@ int main(int argc, char* argv[]) {
     validImage[i] = false;
   }
 
-  printf("\nTotal images are %d", numTotalImages);
   ifstream infile( bundleFileName.c_str(), ifstream::in);
   if(infile.is_open() != true) {
 		return false; 
@@ -78,7 +76,7 @@ int main(int argc, char* argv[]) {
 
   for(int i=0; i < numImgs; i++) {
     int camIdx = idxMap1[i];
-    printf("\nImage %d: %d: ", i, camIdx);
+  //  printf("\nImage %d: %d: ", i, camIdx);
       fflush(stdout);
     if(camIdx >= numTotalImages) {
       printf("\nBig Problem");
@@ -105,7 +103,8 @@ int main(int argc, char* argv[]) {
     for(int c=0; c < 3; c++) {
       strm1 >> translations[camIdx][c];  
     }
-    
+   
+    /*
     for(int m=0; m < 3; m++) {
       printf("%lf ", intrinsics[camIdx][m]);
     }
@@ -115,11 +114,11 @@ int main(int argc, char* argv[]) {
     for(int m=0; m < 3; m++) {
       printf("%lf ", translations[camIdx][m]);
     }
+    */
 
     fflush(stdout);
   }
 
-  printf("\nTotal images are %d", numTotalImages);
   for(int i=0; i < numPoints; i++) {
 
     coords[i].resize(3,0.0);
@@ -162,7 +161,7 @@ int main(int argc, char* argv[]) {
 
   fprintf(fp, "%s\n", header.c_str());
   fprintf(fp, "%d %d\n", numTotalImages, numPoints);
-  for(int i=0; i < numImgs; i++) {
+  for(int i=0; i < numTotalImages; i++) {
     if(validImage[i] == true) {
       fprintf(fp, "%lf %lf %lf\n", intrinsics[i][0], intrinsics[i][1], intrinsics[i][2]);
       for(int r = 0; r < 3; r++) {
