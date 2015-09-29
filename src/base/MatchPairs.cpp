@@ -241,6 +241,8 @@ bool MatchPairs::matchListPairs(string& listPath ,string& resultDir) {
 //    vector< pair < pointstr, pointstr> > matchesList;
 //    matchesList.reserve(1000000);
 
+    unsigned long long int sum_clock = 0;
+
     while(counter < candPairs.size()) {
         pair<int, int> p = candPairs[counter]; 
 
@@ -259,6 +261,7 @@ bool MatchPairs::matchListPairs(string& listPath ,string& resultDir) {
         const string& queryImgName = imgList.getImageName(queryIdx); 
 
         do {
+            clock_t local_start = clock();
             pair<int, int> p = candPairs[counter]; 
             int refIdx = p.second;
 
@@ -304,7 +307,9 @@ bool MatchPairs::matchListPairs(string& listPath ,string& resultDir) {
             int numMatches = matcher.match();            
             counter = counter + 1;
 
+            clock_t local_end = clock();
 
+            sum_clock += local_end - local_start;
             printf("\n%d and %d : matches found %d", queryIdx, refIdx, numMatches);
 
             if(numMatches >= 16) {
@@ -347,6 +352,8 @@ bool MatchPairs::matchListPairs(string& listPath ,string& resultDir) {
     clock_t end = clock();    
     printf("[KeyMatchGeoAware] For %s: Matching took %0.3fs\n", 
             (end - start) / ((double) CLOCKS_PER_SEC), listPath.c_str());
+    printf("[KeyMatchGeoAware] For %s: Matching without writing %0.3fs\n", 
+            sum_clock / ((double) CLOCKS_PER_SEC), listPath.c_str());
     fflush(stdout);
     return true;
 }
@@ -504,11 +511,16 @@ bool MatchPairs::matchAllPairs(string& resultDir) {
 
 void MatchPairs::findAllCandidateImages(bool tryHard) {
     totalCandidatePairs = 0;
+    printf("\nLocalized images %d", localizedImages.size());
     candidateLists.resize(localizedImages.size());
     for(int i=0; i < localizedImages.size(); i++) {
         bool status = findCandidateImages(localizedImages[i], tryHard);
         totalCandidatePairs += candidateLists[i].size();
+        if(!status) {
+            printf("\nCould not find candidate pairs for localized image %d", localizedImages[i]);
+        }
     }
+    fflush(stdout);
 }
 
 bool MatchPairs::findSelectedCandidateImages(string& idFile, bool tryHard) {
@@ -556,7 +568,9 @@ bool MatchPairs::findCandidateImages(int qImgId, bool tryHard) {
     sortAndTruncateHistogram(viewPointMap, 
             sortedList, numMinCovisible, qImgId); 
 
-    if(sortedList.size() == 0) return false;
+    if(sortedList.size() == 0) {
+        return false;
+    }
     if(tryHard && sortedList.size() < numMaxCandidates) {
         bool status = twoLevelNearbySearch(qImgId, viewPointMap,
                 sortedList);
@@ -704,7 +718,8 @@ int MatchPairs::sortAndTruncateHistogram(
 
     multimap< float,int>::iterator mIt = tempNearBy.begin();
     while(mIt != tempNearBy.end()) {
-        if((*mIt).first >= 16) {
+//        if((*mIt).first >= 16) {
+        if((*mIt).first >= 4) {
             sortedList.push_back((*mIt).second);
         } else { 
             int view_id = (*mIt).second;

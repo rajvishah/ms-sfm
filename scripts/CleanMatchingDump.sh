@@ -68,7 +68,7 @@ CLEAN_DUMP() {
     if [ -d $baseDir/pairs ]; then
         cd $baseDir/pairs/
         cat *pairs*.txt > $baseDir/all_pairs.txt
-        cd ..
+        cd $baseDir
         rm -r pairs
     fi
     
@@ -76,7 +76,7 @@ CLEAN_DUMP() {
     if [ -d $baseDir/ranks ]; then
         cd $baseDir/ranks/
         cat *ranks*.txt > $baseDir/all_ranks.txt
-        cd ..
+        cd $baseDir
         rm -r ranks
     fi
    
@@ -84,9 +84,10 @@ CLEAN_DUMP() {
     if [ -d $baseDir/tracks ]; then
         cd $baseDir/tracks/
         cat long-tracks*.txt > $baseDir/long-tracks.txt
-        cat triangulated-tracks*.txt > $baseDir/triangulated-tracks.txt
-        cd ..
-        rm -r tracks
+        cat triangulated-tracks*.txt > triangulated-tracks_combined.txt
+        cat triangulated-tracks*.txt > $baseDir/triangulated-tracks_combined.txt
+        cd $baseDir
+        rm tracks/triangulated-tracks-*.txt
     fi
     
     echo "Cleaned " $prefix " dump"

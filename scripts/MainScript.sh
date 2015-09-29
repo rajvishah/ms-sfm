@@ -66,37 +66,37 @@ $scriptPath/RunLocalizeOwn.sh $loc1OwnDir $scriptPath $binPath $loc1Dir $cgmDir 
 
 ###################################################################################
 
-'
 numLoc=`cat $loc1OwnDir/localized_queries_final.txt | wc -l`
 if [ $numLoc -eq 0 ]; then
     exit
 fi
 $scriptPath/RunDensify.sh $dens1Dir $cgmDir $loc1OwnDir $imageDir $scriptPath $binPath 1
 echo "Cleaning match dump"
-CLEAN_DUMP $dens1Dir "guidedmatch"
+#CLEAN_DUMP $dens1Dir "guidedmatch"
 echo "Cleaning track dump"
-cat $dens1Dir/log/maketracks_*.out > $dens1Dir/maketracks_log.out
-rm $dens1Dir/log/maketracks_*.*
+#cat $dens1Dir/log/maketracks_*.out > $dens1Dir/maketracks_log.out
+#rm $dens1Dir/log/maketracks_*.*
 
+'
 ###################################################################################
 
 $scriptPath/RunLocalize.sh $loc2Dir $scriptPath $binPath $dens1Dir $cgmDir
-$scriptPath/RunLocalizeOwn.sh $loc2OwnDir $scriptPath $binPath $loc2Dir $cgmDir $globalMatchDir
+#$scriptPath/RunLocalizeOwn.sh $loc2OwnDir $scriptPath $binPath $loc2Dir $cgmDir $globalMatchDir
 
 ###################################################################################
 
+:'
 numLoc=`cat $loc2OwnDir/localized_queries_final.txt | wc -l`
 if [ $numLoc -eq 0 ]; then
     exit
 fi
 
-$scriptPath/RunDensify.sh $dens2Dir $cgmDir $loc2ownDir $imageDir $scriptPath $binPath 1
+$scriptPath/RunDensify.sh $dens2Dir $cgmDir $loc2OwnDir $imageDir $scriptPath $binPath 1
 echo "Cleaning match dump"
 CLEAN_DUMP $dens2Dir "guidedmatch"
 cat $dens2Dir/log/maketracks_*.out > $dens2Dir/maketracks_log.out
 rm $dens2Dir/log/maketracks_*.*
 
-:'
 ###################################################################################
 
 $scriptPath/RunLocalize.sh $loc3Dir $scriptPath $binPath $dens2Dir $cgmDir
