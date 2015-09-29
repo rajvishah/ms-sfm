@@ -1,6 +1,6 @@
 CC=g++ 
-#CFLAGS=-O0 -w -g -c -Wall
-CFLAGS=-O3 -w -c -Wall
+CFLAGS=-O0 -w -g -c -Wall
+#CFLAGS=-O3 -w -c -Wall
 
 # Change the path in the following to your ANN and zlib distribution paths
 # Alternatively, copy the lib and .h files to your global lib and include paths
@@ -12,12 +12,12 @@ LIBPATH=-L$(BUNDLER_PATH)/lib/ann_1.1_char/lib/ -L$(BUNDLER_PATH)/lib/zlib/lib -
 IFLAGS=-I$(BUNDLER_PATH)/lib/ann_1.1_char/include/ -I../lib/zlib/include/ -I/home/rajvi/local_libs/include/ -I$(BUNDLER_PATH)/lib/sfm-driver/ -I$(BUNDLER_PATH)/lib/imagelib/ -I$(BUNDLER_PATH)/lib/matrix/
 
 #LIBS=-lsfmdrv -limage -lsba.v1.5 -lANN_char -lz -lmatrix -lcblas -llapack -lminpack -ljpeg 
-LIBS=-lsfmdrv -limage -lsba.v1.5 -lANN_char -lz -lmatrix -lblas -lcblas -llapack -lminpack -ljpeg 
+LIBS=-lsfmdrv -limage -lsba.v1.5 -lANN_char -lz -lmatrix -lblas -lcblas -llapack -lminpack -ljpeg -fopenmp 
 
 PKGCONFIGFLAG=`pkg-config --cflags --libs opencv`
 
-default: localizer CreateGuidedMatchPairs GuidedMatchLists CreateGlobalMatchPairs GlobalMatchLists make_tracks triangulate_tracks merge_cameras merge_tracks KeyMatchFull matcher3d_2d kcover 
-	mv -t ../../bin localizer CreateGuidedMatchPairs GuidedMatchLists make_tracks triangulate_tracks merge_cameras merge_tracks CreateGlobalMatchPairs GlobalMatchLists KeyMatchFull matcher3d_2d kcover
+default: localizer CreateGuidedMatchPairs GuidedMatchLists CreateGlobalMatchPairs GlobalMatchLists make_tracks triangulate_tracks merge_cameras merge_tracks KeyMatchFull matcher3d_2d kcover find_and_triangulate_tracks nvm2bdl 
+	mv -t ../../bin localizer CreateGuidedMatchPairs GuidedMatchLists make_tracks triangulate_tracks merge_cameras merge_tracks CreateGlobalMatchPairs GlobalMatchLists KeyMatchFull matcher3d_2d kcover find_and_triangulate_tracks nvm2bdl
 localizer: Match3Dto2D.o ../base/Localize.o ../base/ImageData.o ../base/Camera.o ../base/ImageSize.o ../base/keys2a.o ../base/Reader.o ../base/Bundle.o
 	$(CC) $(IFLAGS) Match3Dto2D.o ../base/Localize.o ../base/ImageData.o ../base/Camera.o ../base/ImageSize.o ../base/keys2a.o ../base/Reader.o ../base/Bundle.o $(LIBPATH) $(PKGCONFIGFLAG)-Wall -o localizer $(LIBS)
 
@@ -61,6 +61,12 @@ GuidedMatchLists.o: GuidedMatchLists.cpp ../base/Reader.cpp ../base/Reader.h ../
 triangulate_tracks: TriangulateTracks.o ../base/argvparser.o ../base/Reader.o ../base/Bundle.o ../base/Triangulater.o
 	$(CC) TriangulateTracks.o ../base/argvparser.o ../base/Reader.o ../base/Bundle.o ../base/Triangulater.o $(LIBPATH) -Wall -o triangulate_tracks $(LIBS)
 
+find_and_triangulate_tracks: FindAndTriangulateTracks.o ../base/argvparser.o ../base/Reader.o ../base/Bundle.o ../base/Triangulater.o
+	$(CC) FindAndTriangulateTracks.o ../base/argvparser.o ../base/Reader.o ../base/Bundle.o ../base/Triangulater.o $(LIBPATH) -Wall -o find_and_triangulate_tracks $(LIBS)
+
+nvm2bdl: NVM2BDL.o ../base/Reader.o ../base/Bundle.o
+	$(CC) $(IFLAGS) NVM2BDL.o ../base/Reader.o ../base/Bundle.o $(LIBPATH) $(PKGCONFIGFLAG) -Wall -o nvm2bdl $(LIBS)
+
 make_tracks: MakeTracks.o ../base/argvparser.o
 	$(CC) MakeTracks.o ../base/argvparser.o -Wall -o make_tracks
 
@@ -85,8 +91,14 @@ Match3Dto2D.o:Match3Dto2D.cpp
 kcover.o : kcover.cpp
 	$(CC) $(CFLAGS) $(IFLAGS) kcover.cpp 
 
+FindAndTriangulateTracks.o: FindAndTriangulateTracks.cpp 
+	$(CC) $(CFLAGS) $(IFLAGS) FindAndTriangulateTracks.cpp
+
 MakeTracks.o : MakeTracks.cpp 
 	$(CC) $(CFLAGS) $(IFLAGS) MakeTracks.cpp 
+
+NVM2BDL.o:NVM2BDL.cpp
+	$(CC) $(CFLAGS) $(IFLAGS) NVM2BDL.cpp
 
 TriangulateTracks.o: TriangulateTracks.cpp 
 	$(CC) $(CFLAGS) $(IFLAGS) TriangulateTracks.cpp
