@@ -25,6 +25,7 @@
 
 #include "RANSAC.hh"
 #include <utility>
+#include <time.h>
 
 // small typedef for the maximal value of uint32_t, used to 
 // avoid having to define __STDC_LIMIT_MACROS 
@@ -277,184 +278,206 @@ void RANSAC::unified_SPRT_LO_RANSAC( const std::vector< float > &c1, const std::
     
       for( ; taken_samples < max_steps/*0.01*/;)
       {
-		if( stop_after_n_secs )
-		{
-		  elapsed_time_sec = time_out_timer.GetElapsedTime();
-		  time_out_timer.Stop();
-		  time_out_timer.Restart();
-		  if( elapsed_time_sec >= 1.0 )
-		  {
-			elapsed_time_total += elapsed_time_sec;
-			elapsed_time_sec = 0.0;
-			time_out_timer.Stop();
-			time_out_timer.Start();
-			elapsed_mins = int(floor(elapsed_time_total)) / 60;
-			if( elapsed_mins > old_mins && elapsed_mins > 0 )
-			{
-			  std::cout << "[RANSAC] elapsed time so far " << elapsed_time_total << " s " << std::endl;
-			  old_mins = elapsed_mins;
-			}
-		  }
-		  old_time = sum_time;
-		  sum_time = elapsed_time_sec + elapsed_time_total;
-		  if( sum_time >= max_time )
-		  {
-			std::cout << "[RANSAC] Warning: RANSAC reached time limit of " << max_time << " s and was stopped" << std::endl;
-			break;
-		  }
-		  if( old_time == sum_time && old_time > 0.0 )
-		  {
-			std::cout << "[RANSAC] Warning: Time did not change value (possibly due to nummerical reasons), so we abort after " << old_time << " s" << std::endl;
-			break;
-		  }
-		}
-		++taken_samples;
-		k_i[current_test] += 1;
-		
-		if( taken_samples == 0 )
-		{
-		  std::cerr << "[RANSAC] Error: The number of samples taken exceeds " << --taken_samples << " ( 2^64-1 ) which is the maximal number representable by a uint32_t." << std::endl;
-		  std::cerr << "[RANSAC] Error: Therefore, we stop searching for a better model here. (Maybe you want to use SCRAMSAC, if applicable, to get rid of outlier!)" << std::endl;
-		  break;
-		}
-	
-		//take a random sample from the set of correspondences
-		random_number_gen.generate_pseudorandom_numbers_unique( (uint32_t) 0, (uint32_t) ( nb_correspondences - 1 ), number_of_samples, randomly_choosen_corr_indices );
-		
-			  
-		//add the correspondences
-		clear_solver();
-		for(std::vector<uint32_t>::iterator itc = randomly_choosen_corr_indices.begin(); itc !=  randomly_choosen_corr_indices.end(); ++itc)
-		{
-		  add_correspondence(c1,c2,correspondence_indices[*itc]);
-		}
-		
-			  
-		//compute hypothesis
-		if(!solve_system())
-		  continue;
-		
-		//compute number of inlier to the hypothesis, evaluate the current SPRT test
-		inlier_found = 0;
-		lambda = 1.0f;
-		bad_model = false;
-		for(std::vector< uint32_t >::const_iterator it = correspondence_indices.begin() ; it != correspondence_indices.end(); ++it )
-		{
-		  if(evaluate_correspondece(c1,c2,*it))
-		  {
-			lambda *= eval_1;
-			++inlier_found;
-		  }
-		  else
-		  {
-			lambda *= eval_0;
-		  }
-		  if( lambda > A_i[current_test] )
-		  {
-			bad_model = true;
-			break;
-		  }
-		}
-	
-		if( bad_model )
-		{
-		  // check if we have to design a new test
-		  nb_rejected += 1.0f;
-		  delta_hat = delta_hat *(nb_rejected-1.0f) / nb_rejected + float(inlier_found)/(float(nb_correspondences) * nb_rejected);
-		  
-		  if( fabs( delta_hat - delta_i[current_test] ) > 0.05f )
-		  {
-			++current_test;
-			k_i[current_test] = 0;
-			epsilon_i[current_test] = epsilon_i[current_test-1];
-			delta_i[current_test] = delta_hat;
-			A_i[current_test] = sprt_compute_A( epsilon_i[current_test], delta_hat );
-		  }
-		  
-		  continue;
-		}
-		
+        if( stop_after_n_secs )
+        {
+          elapsed_time_sec = time_out_timer.GetElapsedTime();
+          time_out_timer.Stop();
+          time_out_timer.Restart();
+          if( elapsed_time_sec >= 1.0 )
+          {
+            elapsed_time_total += elapsed_time_sec;
+            elapsed_time_sec = 0.0;
+            time_out_timer.Stop();
+            time_out_timer.Start();
+            elapsed_mins = int(floor(elapsed_time_total)) / 60;
+            if( elapsed_mins > old_mins && elapsed_mins > 0 )
+            {
+              std::cout << "[RANSAC] elapsed time so far " << elapsed_time_total << " s " << std::endl;
+              old_mins = elapsed_mins;
+            }
+          }
+          old_time = sum_time;
+          sum_time = elapsed_time_sec + elapsed_time_total;
+          if( sum_time >= max_time )
+          {
+            std::cout << "[RANSAC] Warning: RANSAC reached time limit of " << max_time << " s and was stopped" << std::endl;
+            break;
+          }
 
-		//compare found inliers to the biggest set of correspondences found so far
-		if(inlier_found > size_inlier_set )
-		{
-		  //store hypothesis and update inlier ratio
-		  store_hypothesis();
-		  
-		  
-		  // compute inlier
-		  inlier.clear();
-		  for( std::vector< uint32_t >::const_iterator it = correspondence_indices.begin() ; it != correspondence_indices.end(); ++it )
-		  {
-			if(evaluate_correspondece(c1,c2,*it))
-			  inlier.push_back( *it );  
-		  }
+          if( old_time == sum_time && old_time > 0.0 )
+            //Changed by Rajvi
+            //uint32_t taken_samples_limit = max_steps < 2500 ? max_steps : 2500;
+            //std::cout << "[RANSAC] Taken Samples Limit:" << taken_samples_limit;
+            //if( old_time == sum_time && old_time > 0.0 && taken_samples > taken_samples_limit)
+          {
+            std::cout << "[RANSAC] Warning: Time did not change value (possibly due to nummerical reasons), so we abort after " << old_time << " s" << std::endl;
+            std::cout << "[RANSAC] Taken Samples :" << taken_samples;
+            break;
+          }
+        }
+        ++taken_samples;
+        k_i[current_test] += 1;
 
-		  //do Local Optimization (LO)-steps (if possible!)
-		  nb_LO_samples = std::max( number_of_samples, std::min( inlier_found / 2, max_number_of_LO_samples ));
-		  for( uint32_t lo_steps = 0; lo_steps < nb_lo_steps; ++lo_steps )
-		  {
-			random_number_gen.generate_pseudorandom_numbers_unique( (uint32_t) 0, (uint32_t) (inlier.size() - 1), nb_LO_samples, LO_randomly_choosen_corr_indices );
-			//generate hypothesis
-			//add the correspondences
-			clear_solver();
-			
-			for( counter = 0; counter < nb_LO_samples; ++counter )
-			{
-			  add_correspondence(c1,c2,inlier[LO_randomly_choosen_corr_indices[counter]]);
-			}
-			
-			//compute hypothesis
-			if(!solve_system())
-			  continue;
-			
-			//compute inlier to the hypothesis
-			new_found_inlier = 0;
-			for(std::vector< uint32_t >::const_iterator it = correspondence_indices.begin(); it != correspondence_indices.end(); ++it )
-			{
-			  if(evaluate_correspondece(c1,c2,*it))
-			++new_found_inlier;
-			}
-			
-			//update found model if new best hypothesis
-			if( new_found_inlier > inlier_found )
-			{
-			  inlier_found = new_found_inlier;
-			  store_hypothesis();
-			}
-		  }
-		  
-		  old_ratio = inlier_ratio;
-		  inlier_ratio = std::max( inlier_ratio, (float) inlier_found / (float) nb_correspondences );
-		  max_steps = get_max_ransac_steps( inlier_ratio );
-		  size_inlier_set = inlier_found;
-		  
-	// 	  std::cout << projection_matrix << std::endl << std::endl;
-		  
-		  // design a new test if needed
-		  // the check must be done to avoid designing a test for an inlier ratio below the specified minimal inlier ratio
-		  if( old_ratio < inlier_ratio )
-		  {
-			++current_test;
-			k_i[current_test] = 0;
-			epsilon_i[current_test] = inlier_ratio;
-			delta_i[current_test] = delta_hat;
-			A_i[current_test] = sprt_compute_A(inlier_ratio, delta_hat);
-		  }
-		}
+        if( taken_samples == 0 )
+        {
+          std::cerr << "[RANSAC] Error: The number of samples taken exceeds " << --taken_samples << " ( 2^64-1 ) which is the maximal number representable by a uint32_t." << std::endl;
+          std::cerr << "[RANSAC] Error: Therefore, we stop searching for a better model here. (Maybe you want to use SCRAMSAC, if applicable, to get rid of outlier!)" << std::endl;
+          break;
+        }
+
+        clock_t t1start = clock();
+        //take a random sample from the set of correspondences
+        random_number_gen.generate_pseudorandom_numbers_unique( (uint32_t) 0, (uint32_t) ( nb_correspondences - 1 ), number_of_samples, randomly_choosen_corr_indices );
+        clock_t t1stop = clock();
+        //printf("\n[KeyMatchGeoAware] RNG took %0.6fs\n", (t1stop - t1start) / ((double) CLOCKS_PER_SEC));
+
+
+        clock_t t2start = clock();
+        //add the correspondences
+        clear_solver();
+        for(std::vector<uint32_t>::iterator itc = randomly_choosen_corr_indices.begin(); itc !=  randomly_choosen_corr_indices.end(); ++itc)
+        {
+          add_correspondence(c1,c2,correspondence_indices[*itc]);
+        }
+        clock_t t2stop = clock();
+        //printf("[KeyMatchGeoAware] Adding correspondences took %0.6fs\n", (t2stop - t2start) / ((double) CLOCKS_PER_SEC));
+
+
+        //compute hypothesis
+        clock_t t3start = clock();
+        bool solve_status = solve_system();
+        clock_t t3stop = clock();
+        //printf("[KeyMatchGeoAware] Solving system took %0.6fs\n", (t3stop - t3start) / ((double) CLOCKS_PER_SEC));
+        if(!solve_status)
+          continue;
+
+        clock_t t4start = clock();
+        //compute number of inlier to the hypothesis, evaluate the current SPRT test
+        inlier_found = 0;
+        lambda = 1.0f;
+        bad_model = false;
+        for(std::vector< uint32_t >::const_iterator it = correspondence_indices.begin() ; it != correspondence_indices.end(); ++it )
+        {
+          if(evaluate_correspondece(c1,c2,*it))
+          {
+            lambda *= eval_1;
+            ++inlier_found;
+          }
+          else
+          {
+            lambda *= eval_0;
+          }
+          if( lambda > A_i[current_test] )
+          {
+            bad_model = true;
+            break;
+          }
+        }
+        clock_t t4stop = clock();
+        //printf("[KeyMatchGeoAware] Evaluating correspondences took %0.6fs\n", (t4stop - t4start) / ((double) CLOCKS_PER_SEC));
+        
+        if( bad_model )
+        {
+          // check if we have to design a new test
+          clock_t t5start = clock();
+          nb_rejected += 1.0f;
+          delta_hat = delta_hat *(nb_rejected-1.0f) / nb_rejected + float(inlier_found)/(float(nb_correspondences) * nb_rejected);
+
+          if( fabs( delta_hat - delta_i[current_test] ) > 0.05f )
+          {
+            ++current_test;
+            k_i[current_test] = 0;
+            epsilon_i[current_test] = epsilon_i[current_test-1];
+            delta_i[current_test] = delta_hat;
+            A_i[current_test] = sprt_compute_A( epsilon_i[current_test], delta_hat );
+          }
+          clock_t t5stop = clock();
+          //printf("[KeyMatchGeoAware] Bad model took %0.6fs\n", (t5stop - t5start) / ((double) CLOCKS_PER_SEC));
+
+          continue;
+        }
+
+
+        //compare found inliers to the biggest set of correspondences found so far
+        if(inlier_found > size_inlier_set )
+        {
+          //store hypothesis and update inlier ratio
+          store_hypothesis();
+
+
+          // compute inlier
+          inlier.clear();
+          for( std::vector< uint32_t >::const_iterator it = correspondence_indices.begin() ; it != correspondence_indices.end(); ++it )
+          {
+            if(evaluate_correspondece(c1,c2,*it))
+              inlier.push_back( *it );  
+          }
+
+          //do Local Optimization (LO)-steps (if possible!)
+          nb_LO_samples = std::max( number_of_samples, std::min( inlier_found / 2, max_number_of_LO_samples ));
+          for( uint32_t lo_steps = 0; lo_steps < nb_lo_steps; ++lo_steps )
+          {
+            random_number_gen.generate_pseudorandom_numbers_unique( (uint32_t) 0, (uint32_t) (inlier.size() - 1), nb_LO_samples, LO_randomly_choosen_corr_indices );
+            //generate hypothesis
+            //add the correspondences
+            clear_solver();
+
+            for( counter = 0; counter < nb_LO_samples; ++counter )
+            {
+              add_correspondence(c1,c2,inlier[LO_randomly_choosen_corr_indices[counter]]);
+            }
+
+            //compute hypothesis
+            if(!solve_system())
+              continue;
+
+            //compute inlier to the hypothesis
+            new_found_inlier = 0;
+            for(std::vector< uint32_t >::const_iterator it = correspondence_indices.begin(); it != correspondence_indices.end(); ++it )
+            {
+              if(evaluate_correspondece(c1,c2,*it))
+                ++new_found_inlier;
+            }
+
+            //update found model if new best hypothesis
+            if( new_found_inlier > inlier_found )
+            {
+              inlier_found = new_found_inlier;
+              store_hypothesis();
+            }
+          }
+
+          old_ratio = inlier_ratio;
+          inlier_ratio = std::max( inlier_ratio, (float) inlier_found / (float) nb_correspondences );
+          max_steps = get_max_ransac_steps( inlier_ratio );
+          size_inlier_set = inlier_found;
+
+          // 	  std::cout << projection_matrix << std::endl << std::endl;
+
+          // design a new test if needed
+          // the check must be done to avoid designing a test for an inlier ratio below the specified minimal inlier ratio
+          if( old_ratio < inlier_ratio )
+          {
+            ++current_test;
+            k_i[current_test] = 0;
+            epsilon_i[current_test] = inlier_ratio;
+            delta_i[current_test] = delta_hat;
+            A_i[current_test] = sprt_compute_A(inlier_ratio, delta_hat);
+          }
+        }
       }
-      
+
       // adjust the number of steps SPRT RANSAC has to take 
       if( old_test != current_test )
       {
-		old_test = current_test;
-		max_steps = SPRT_get_max_sprt_ransac_steps( inlier_ratio, current_test );
+        old_test = current_test;
+        max_steps = SPRT_get_max_sprt_ransac_steps( inlier_ratio, current_test );
       }
       else
-		break;
+        break;
     }
-    
-      
+
+
     if( !silent )
       std::cout << "[RANSAC] SPRT-LO-RANSAC took " << taken_samples << " samples using " << current_test+1 << " SPRTs, found " << size_inlier_set << " inlier ( " << inlier_ratio << " % ) " << std::endl;
   }
@@ -470,20 +493,20 @@ void RANSAC::compute_final_correspondences( const std::vector< float > &c1, cons
     inlier_ratio = (float) size_inlier_set / (float) indices.size();
     return;
   }
-  
-//   std::cout << " nb inlier : " << size_inlier_set << " ratio : " << inlier_ratio << std::endl;
-  
+
+  //   std::cout << " nb inlier : " << size_inlier_set << " ratio : " << inlier_ratio << std::endl;
+
   uint32_t nb_correspondences = (uint32_t) indices.size();
-  
+
   inlier_correspondences.clear();
-  
- 
+
+
   size_inlier_set = 0;
-  
- 
+
+
   set_hypothesis();
-  
-  
+
+
   for(std::vector< uint32_t >::const_iterator it = indices.begin() ; it != indices.end(); ++it )
   {
     if(evaluate_correspondece(c1,c2,*it))
@@ -494,7 +517,7 @@ void RANSAC::compute_final_correspondences( const std::vector< float > &c1, cons
   }
 
   inlier_ratio = float(size_inlier_set)/float(nb_correspondences);
-  
+
   if( !silent )
   {
     std::cout << "[RANSAC] Percentage Inlier found on all (reduced) correspondences : " << (float) inlier_ratio << std::endl;

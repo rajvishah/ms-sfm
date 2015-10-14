@@ -73,7 +73,7 @@ else()
 
   FIND_LIBRARY(LAPACK_LIB
     NAMES lapack 
-    PATHS /usr/lib /usr/local/lib /usr/lib64/atlas/ /global/atlas-3.10.1/lib/ )
+    PATHS /usr/lib )
   
   FIND_LIBRARY(BLAS_LIB 
     NAMES openblas 
@@ -81,7 +81,7 @@ else()
   
   FIND_LIBRARY(F2C_LIB
     NAMES f2c 
-    PATHS /usr/lib /usr/local/lib /home/cvit/rajvi/local_libs/lib/)
+    PATHS /home/rajvi/vsfm/vsfm/lib/)
 
  GET_FILENAME_COMPONENT( LAPACK_LIBRARY_PATH ${LAPACK_LIB} PATH )
 

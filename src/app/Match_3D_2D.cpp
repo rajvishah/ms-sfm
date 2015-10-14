@@ -60,32 +60,6 @@ int main( int argc, char* argv[]) {
         queryToImage.push_back(qId);
     }
    
-    int imageIdx = queryToImage[queryIdx];
-    
-    /*
-    ifstream listFile(listFileName.c_str(), std::ifstream::in);
-    if(!listFile.is_open()) {
-        cout << "\nError opening List File";
-        return -1;
-    }
-    string imageString;
-    vector<string> keyFileNames;
-    int line_count = 0;
-    while(getline(listFile, line)) {
-        string readString = line;
-        stringstream strm(line);
-        string str;
-        std::getline(strm, str, '.');
-        string keyFileName = str + ".key";
-        keyFileNames.push_back(keyFileName);
-        if(line_count == imageIdx) {
-            string imageString = str + ".jpg";
-        }
-        line_count++;
-    }
-    listFile.close();
-    */
-
     bundle::Bundle bdl;
     reader::BundleReader br(bundlePath, &bdl); 
     bool status = br.read(&bdl);
@@ -100,6 +74,8 @@ int main( int argc, char* argv[]) {
         return -1;
     }
 
+    int imageIdx = queryToImage[queryIdx];
+
     vector< pair<int, int> > nearbyWithScores;
     vector< pair<int, int> > allNearbyImages;
     while(getline(rankFile, line)) {
@@ -112,6 +88,7 @@ int main( int argc, char* argv[]) {
             allNearbyImages.push_back(make_pair(c,b));
         }
     }
+
     clock_t end1 = clock();    
     printf("\n[Match_3D_2D] Reading various list files took %0.6fs\n", 
             (end1 - start1) / ((double) CLOCKS_PER_SEC));

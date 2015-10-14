@@ -16,8 +16,8 @@ LIBS=-lsfmdrv -limage -lsba.v1.5 -lANN_char -lz -lmatrix -lblas -lcblas -llapack
 
 PKGCONFIGFLAG=`pkg-config --cflags --libs opencv`
 
-default: localizer CreateGuidedMatchPairs GuidedMatchLists CreateGlobalMatchPairs GlobalMatchLists make_tracks triangulate_tracks merge_cameras merge_tracks KeyMatchFull matcher3d_2d kcover find_and_triangulate_tracks nvm2bdl 
-	mv -t ../../bin localizer CreateGuidedMatchPairs GuidedMatchLists make_tracks triangulate_tracks merge_cameras merge_tracks CreateGlobalMatchPairs GlobalMatchLists KeyMatchFull matcher3d_2d kcover find_and_triangulate_tracks nvm2bdl
+default: localizer CreateGuidedMatchPairs GuidedMatchLists CreateGlobalMatchPairs GlobalMatchLists make_tracks triangulate_tracks merge_cameras merge_tracks KeyMatchFull matcher3d_2d kcover find_and_triangulate_tracks nvm2bdl convert_matches 
+	mv -t ../../bin localizer CreateGuidedMatchPairs GuidedMatchLists make_tracks triangulate_tracks merge_cameras merge_tracks CreateGlobalMatchPairs GlobalMatchLists KeyMatchFull matcher3d_2d kcover find_and_triangulate_tracks nvm2bdl convert_matches
 localizer: Match3Dto2D.o ../base/Localize.o ../base/ImageData.o ../base/Camera.o ../base/ImageSize.o ../base/keys2a.o ../base/Reader.o ../base/Bundle.o
 	$(CC) $(IFLAGS) Match3Dto2D.o ../base/Localize.o ../base/ImageData.o ../base/Camera.o ../base/ImageSize.o ../base/keys2a.o ../base/Reader.o ../base/Bundle.o $(LIBPATH) $(PKGCONFIGFLAG)-Wall -o localizer $(LIBS)
 
@@ -70,11 +70,18 @@ nvm2bdl: NVM2BDL.o ../base/Reader.o ../base/Bundle.o
 make_tracks: MakeTracks.o ../base/argvparser.o
 	$(CC) MakeTracks.o ../base/argvparser.o -Wall -o make_tracks
 
+
+convert_matches: ConvertMatchFile.o ../base/Reader.o ../base/keys2a.o
+	$(CC) ConvertMatchFile.o ../base/Reader.o ../base/keys2a.o $(LIBPATH) -Wall -o convert_matches $(LIBS)
+
 merge_cameras: MergeCameras.o
 	$(CC) MergeCameras.o -Wall -o merge_cameras
 
 merge_tracks: MergeTracks.o
 	$(CC) MergeTracks.o $(LIBPATH) -Wall -o merge_tracks $(LIBS) 
+
+ConvertMatchFile.o:ConvertMatchFile.cpp
+	$(CC) $(CFLAGS) $(IFLAGS) ConvertMatchFile.cpp
 
 MergeTracks.o:MergeTracks.cpp
 	$(CC) $(CFLAGS) $(IFLAGS) MergeTracks.cpp

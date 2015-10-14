@@ -125,6 +125,8 @@ bool MakeTracksFromMatches(string filename, vector< vector <pointstr> >& tracksV
       (end2 - start2) / ((double) CLOCKS_PER_SEC));
   printf("\n[ TriangulateTracks - timings ]  Sorting and finding tracks with openmp support would take %0.6fs\n", 
       (end2 - start2) / ((double) CLOCKS_PER_SEC * numProcs));
+
+  return true;
 }
 
 
@@ -135,6 +137,7 @@ bool WriteTriangulatedTracks(string filename, vector< vector < pointstr > >& tra
   FILE* outputFile = fopen(filename.c_str(), "w");
   if(outputFile == NULL) {
     printf("\nOutput file could not be created");
+    fflush(stdout);
     return -1;
   }
 
@@ -226,7 +229,13 @@ void SetupCommandlineParser(ArgvParser& cmd, int argc, char* argv[]) {
 
 
 
-int main(int argc, char* argv[]) { 
+int main(int argc, char* argv[]) {
+  /*
+   * This program can be used in 
+   *
+   *
+   *
+   */
     ArgvParser cmd;
     SetupCommandlineParser(cmd, argc, argv);
 

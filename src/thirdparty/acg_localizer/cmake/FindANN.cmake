@@ -20,13 +20,13 @@ endif()
 
 
 FIND_PATH(ANN_INCLUDE_DIR ANN/ANN.h
-	  PATHS "/home/cvit/rajvi/local_libs/include/"
+  PATHS "/home/rajvi/MSSFM_FRESH/ms-sfm/src/thirdparty/acg_localizer/extralibs/ann_1.1.2/include/"
                 )
 
 if( ANN_INCLUDE_DIR )
    set( ANN_FOUND TRUE )
 
-   set( ANN_LIBRARY_DIR "/home/cvit/rajvi/local_libs/lib/" )
+   set( ANN_LIBRARY_DIR "/home/rajvi/MSSFM_FRESH/ms-sfm/src/thirdparty/acg_localizer//extralibs/ann_1.1.2/lib/" )
 
    set( ANN_LIBRARY optimized ANN debug ANN )
 

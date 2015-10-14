@@ -15,7 +15,7 @@ ENDIF (FLANN_INCLUDE_DIR)
 
                
 FIND_PATH(FLANN_INCLUDE_DIR flann/flann.hpp
-	  PATHS "/home/cvit/rajvi/local_libs/include/"
+  PATHS "/home/rajvi/MSSFM_FRESH/ms-sfm/src/thirdparty/acg_localizer/extralibs/flann-1.6.11-src/src/cpp/"
                 )                
                 
 set( LIBDIR lib64 )
@@ -23,7 +23,7 @@ set( LIBDIR lib64 )
 if( FLANN_INCLUDE_DIR )
    set( FLANN_FOUND TRUE )
 
-   set( FLANN_LIBRARY_DIR "/home/cvit/rajvi/local_libs/lib" )
+   set( FLANN_LIBRARY_DIR "/home/rajvi/MSSFM_FRESH/ms-sfm/src/thirdparty/acg_localizer/extralibs/flann-1.6.11-src/build/lib/" )
 
    set( FLANN_LIBRARY optimized flann_cpp debug flann_cpp )
 

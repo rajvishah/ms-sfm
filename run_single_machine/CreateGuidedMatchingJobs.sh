@@ -43,52 +43,5 @@ fi
 
 sleep 3
 
-pairListFiles=($LIST_DIR/pairs-*.txt)
-numPairLists=`expr ${#pairListFiles[@]} - 1`
+echo $BIN_PATH/match_pairs $BASE_LIST_PATH/list_images.txt $BASE_LIST_PATH/list_keys.txt $BASE_DIR/pairs/pairs-0.txt $MATCHES_DIR/matches.txt > $BASE_DIR/run_guidedmatch.sh 
 
-jobFile=guidedmatch_array_jobs.sh
-
-echo "#!/bin/bash" > $jobFile
-echo "#SBATCH --job-name=guidedmatch" >> $jobFile
-echo "#SBATCH --output=log/guidedmatch_%A_%a.out" >> $jobFile
-echo "#SBATCH --error=log/guidedmatch_%A_%a.err" >> $jobFile
-arrayStr="#SBATCH --array=0-"$numPairLists
-echo $arrayStr  >> $jobFile
-echo "#SBATCH --partition=long" >> $jobFile
-echo "#SBATCH --account=cvit" >> $jobFile
-echo "#SBATCH --mem-per-cpu=3945" >> $jobFile
-echo "#SBATCH --ntasks-per-core=2" >> $jobFile
-echo "#SBATCH -t 24:00:00" >> $jobFile
-
-echo $BIN_PATH/GuidedMatchLists --bundle_dir=$BUNDLE_DIR --base_dir=$BASE_LIST_PATH --result_dir=$MATCHES_DIR --list_file=$LIST_DIR/pairs-\$SLURM_ARRAY_TASK_ID.txt >> $jobFile
-
-
-: '
-filecounter=-1
-counter=0
-numCores=24
-filename=""
-for file in ${pairListFiles[@]}
-do
-    if [ `expr $counter % $numCores` -eq 0 ];
-    then
-        echo "wait" >> $filename
-        counter=0
-        filecounter=`expr $filecounter + 1`
-        filename="job_"$filecounter".sh"
-        echo $filename
-        touch $filename
-        echo "#!/bin/bash" > $filename
-        echo "#SBATCH -A cvit" >> $filename
-        echo "#SBATCH -p long" >> $filename
-        echo "#SBATCH -n 24" >> $filename
-        echo "#SBATCH --mem-per-cpu=3945" >> $filename
-        echo "#SBATCH -t 24:00:00" >> $filename
-        echo "sbatch " $filename >> run_all.sh
-    fi 
-    echo "time "$BIN_PATH/GuidedMatchLists" --base_dir="$BASE_DIR" --result_dir="$MATCHES_DIR" --list_file="$file" 2>&1 &" >> $filename
-#    echo "time "$BIN_PATH/GuidedMatchLists" --base_dir="$BASE_DIR" --result_dir=/scratch/rajvi/pantheon_interior/ --list_file="$file" 2>&1 &" >> $filename
-    counter=`expr $counter + 1`
-    echo $counter
-done
-'

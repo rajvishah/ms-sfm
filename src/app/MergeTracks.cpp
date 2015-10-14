@@ -363,7 +363,8 @@ int main(int argc, char* argv[]) {
 
     while(fgets(path, sizeof(path)-1, fSys) != NULL) {
         path[strlen(path)-1] = '\0';
-        printf("[DEBUG] Reading Output File: %s\n", path);	
+        printf("[DEBUG] Reading Output File: %s\n", path);
+        fflush(stdout);
         FILE *f = fopen(path, "r");
         char line[1000];
         char waste[1000];
@@ -421,6 +422,7 @@ int main(int argc, char* argv[]) {
 
                 fscanf(f,"%lf",&temp);
                 y_cord[ar[i]]=temp;
+          
 
             }
             double x, y, z;

@@ -63,7 +63,7 @@
 #include <OpenMesh/Core/Geometry/VectorT.hh>
 
 // the ANN library
-#include "/home/cvit/rajvi/local_libs/include/ANN/ANN.h"
+#include "ANN/ANN.h"
 
 ////
 // constants

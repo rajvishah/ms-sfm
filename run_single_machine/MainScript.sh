@@ -23,7 +23,7 @@ loc2OwnDir=$runDir/loc2own
 dens2Dir=$runDir/dens2
 
 #################################################################################
-rm -rf $globalMatchDir; mkdir $globalMatchDir
+#rm -rf $globalMatchDir; mkdir $globalMatchDir
 #rm -rf $cgmDir; mkdir -p $cgmDir/log
 ls $imageDir/*.key > $cgmDir/list_keys.txt
 ls $imageDir/*.jpg > $cgmDir/list_images.txt
@@ -34,20 +34,20 @@ identify $imageDir/*.jpg | cut -d' ' -f3 | sed 's/x/ /g'> $cgmDir/image_dims.txt
 # Write VisualSFM Call Commands/ Matching Commands
 # Process Outputs / Parse logs and output stats
 
-
+:'
 $scriptPath/NVM2Bdl.sh $cgmDir/result.nvm $cgmDir/list_images.txt $cgmDir/bdlconvert
 $binPath/nvm2bdl $cgmDir/bundle.buggy.out $cgmDir/bdlconvert.map1 $cgmDir/bdlconvert.map2 $cgmDir/bundle.out
-
+'
 ###------------------------------------------------
-:'
 ###################################################################################
-$scriptPath/RunLocalize.sh $locDir $scriptPath $binPath $cgmDir $cgmDir
-$scriptPath/RunLocalizeOwn.sh $locOwnDir $scriptPath $binPath $locDir $cgmDir $globalMatchDir
+#$scriptPath/RunLocalize.sh $locDir $scriptPath $binPath $cgmDir $cgmDir
+#$scriptPath/RunLocalizeOwn.sh $locOwnDir $scriptPath $binPath $locDir $cgmDir $globalMatchDir
 
 ###################################################################################
 
 $scriptPath/RunDensify.sh $densDir $cgmDir $locOwnDir $imageDir $scriptPath $binPath 0
 
+:'
 ###################################################################################
 
 $scriptPath/RunLocalize.sh $loc1Dir $scriptPath $binPath $densDir $cgmDir

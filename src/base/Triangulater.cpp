@@ -223,6 +223,7 @@ bool triang::TriangulateTrack(bundle::Bundle* bdl, reader::ImageListReader& imLi
 
     for(int i = 0; i < trackDetails.size(); i++) { 
         int view = trackDetails[i].viewId;
+
         pt_views.push_back(view);
 
         int siftId = trackDetails[i].siftId;

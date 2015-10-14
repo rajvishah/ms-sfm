@@ -76,8 +76,6 @@ int main(int argc, char* argv[]) {
 
   for(int i=0; i < numImgs; i++) {
     int camIdx = idxMap1[i];
-  //  printf("\nImage %d: %d: ", i, camIdx);
-      fflush(stdout);
     if(camIdx >= numTotalImages) {
       printf("\nBig Problem");
       fflush(stdout);

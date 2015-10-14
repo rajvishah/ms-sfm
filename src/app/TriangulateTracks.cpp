@@ -116,7 +116,6 @@ int main(int argc, char* argv[]) {
     long long int totalClock = 0;
 
     while( fscanf(inputFile, "%d", &trackLength)!= EOF) {  
-        initialTrackCount++;
         int count = 0; 
         vector< pointstr > track;
         while(count < trackLength) {
@@ -125,13 +124,20 @@ int main(int argc, char* argv[]) {
             fscanf(inputFile, "%d", &pt.siftId);
             fscanf(inputFile, "%lf", &pt.xcord);
             fscanf(inputFile, "%lf", &pt.ycord);
-            track.push_back(pt);
+
+            if(bdl.validTriangulated[pt.viewId] == true) {
+              track.push_back(pt);
+            }
             count++;
         }
 
         v3_t point;
         clock_t start = clock();
-        bool status = triang::TriangulateTrack(&bdl, imList, track, point,angleVerify);
+        bool status = false;
+        if(track.size() > 1) {
+          initialTrackCount++;
+          status = triang::TriangulateTrack(&bdl, imList, track, point,angleVerify);
+        }
         clock_t end = clock();
 
         totalClock += (end - start);

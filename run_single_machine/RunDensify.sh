@@ -15,17 +15,18 @@ rm -rf $densDir; mkdir -p $densDir/log
 cd $densDir
 
 # If num nearby images is too few restrict to 20
-nImgs=`wc -l $baseDir/list.txt | cut -d' ' -f1`
+nImgs=`wc -l $baseDir/list_keys.txt | cut -d' ' -f1`
 nNear=`expr $nImgs / 10`
 if [ $nNear -le 20 ]; then
     nNear=20
 fi
 
 # Create jobs for guided matching and run
-$scriptPath/CreateGuidedMatchingJobs.sh $prevDir $baseDir $densDir $imageDir $nNear 200 $binPath $densifyNew
+$scriptPath/CreateGuidedMatchingJobs.sh $prevDir $baseDir $densDir $imageDir $nNear 1 $binPath $densifyNew
+sh $densDir/run_guidedmatch.sh
 
-CALL_SBATCH $densDir/guidedmatch_array_jobs.sh
-cat $densDir/matches/matches*.txt > matches.txt
+#$densDir/run_guidedmatch.sh
+mv $densDir/matches/matches.txt $densDir/matches.txt
 
 # Add verification and timing print here
 #rm $densDir/matches_files/matches*.txt
@@ -33,17 +34,11 @@ cat $densDir/matches/matches*.txt > matches.txt
 
 # From matches, create long tracks 
 mkdir $densDir/tracks
-$scriptPath/CreateTracksJobs.sh $binPath $densDir/matches.txt $densDir/tracks/ $nImgs $prevDir/ $baseDir
-CALL_SBATCH $densDir/maketracks_array_jobs.sh
+echo $binPath/find_and_triangulate_tracks --input_path=$densDir/ --output_path=$densDir/tracks/ --bundler_path=$prevDir --lists_path=$baseDir --num_images=$nImgs > $densDir/run_trackjob.sh
+echo $binPath/merge_tracks $prevDir $densDir/tracks/ $densDir >> $densDir/run_trackjob.sh
+echo $binPath/triangulate_tracks --tracks_dir=$densDir/tracks/ --image_idx=0 --bundler_path=$prevDir --lists_path=$baseDir --mode=merged >> $densDir/run_trackjob.sh
 
-# Merge old and new tracks using connected components
-cat $scriptPath/run_merge_tracks_preemble.txt > $densDir/run_merge_tracks.sh
-echo $binPath/merge_tracks $prevDir $densDir/tracks/ $densDir >> $densDir/run_merge_tracks.sh
-CALL_SBATCH $densDir/run_merge_tracks.sh
-
-# Triangulate final tracks 
-$scriptPath/CreateFinalTracksJob.sh $binPath $densDir $prevDir $baseDir
-CALL_SBATCH $densDir/finaltracks_job.sh
+sh $densDir/run_trackjob.sh
 
 # Merge old bundle file cameras and new tracks 
 nPts=`wc -l $densDir/triangulated-tracks-final.txt | cut -d' ' -f1`

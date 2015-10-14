@@ -274,7 +274,6 @@ bool BundleReader::read() {
 			bdl->validTriangulated[i] = false;
 			focalLength = -1;
 		} else {
-
 			bdl->validTriangulated[i] = true;
 		}
 
