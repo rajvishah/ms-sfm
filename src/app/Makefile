@@ -1,6 +1,6 @@
 CC=g++ 
-CFLAGS=-O0 -w -g -c -Wall
-#CFLAGS=-O3 -w -c -Wall
+#CFLAGS=-O0 -w -g -c -Wall
+CFLAGS=-O3 -w -c -Wall
 
 # Change the path in the following to your ANN and zlib distribution paths
 # Alternatively, copy the lib and .h files to your global lib and include paths
@@ -16,8 +16,8 @@ LIBS=-lsfmdrv -limage -lsba.v1.5 -lANN_char -lz -lmatrix -lblas -lcblas -llapack
 
 PKGCONFIGFLAG=`pkg-config --cflags --libs opencv`
 
-default: localizer CreateGuidedMatchPairs GuidedMatchLists CreateGlobalMatchPairs GlobalMatchLists make_tracks triangulate_tracks merge_cameras merge_tracks KeyMatchFull matcher3d_2d kcover find_and_triangulate_tracks nvm2bdl convert_matches 
-	mv -t ../../bin localizer CreateGuidedMatchPairs GuidedMatchLists make_tracks triangulate_tracks merge_cameras merge_tracks CreateGlobalMatchPairs GlobalMatchLists KeyMatchFull matcher3d_2d kcover find_and_triangulate_tracks nvm2bdl convert_matches
+default: localizer CreateGuidedMatchPairs GuidedMatchLists CreateGlobalMatchPairs GlobalMatchLists make_tracks triangulate_tracks merge_cameras merge_tracks KeyMatchFull matcher3d_2d kcover find_and_triangulate_tracks nvm2bdl convert_matches compute_reprojection 
+	mv -t ../../bin localizer CreateGuidedMatchPairs GuidedMatchLists make_tracks triangulate_tracks merge_cameras merge_tracks CreateGlobalMatchPairs GlobalMatchLists KeyMatchFull matcher3d_2d kcover find_and_triangulate_tracks nvm2bdl convert_matches compute_reprojection
 localizer: Match3Dto2D.o ../base/Localize.o ../base/ImageData.o ../base/Camera.o ../base/ImageSize.o ../base/keys2a.o ../base/Reader.o ../base/Bundle.o
 	$(CC) $(IFLAGS) Match3Dto2D.o ../base/Localize.o ../base/ImageData.o ../base/Camera.o ../base/ImageSize.o ../base/keys2a.o ../base/Reader.o ../base/Bundle.o $(LIBPATH) $(PKGCONFIGFLAG)-Wall -o localizer $(LIBS)
 
@@ -57,6 +57,10 @@ CreateGuidedMatchPairs.o: CreateGuidedMatchPairs.cpp ../base/Reader.cpp ../base/
 
 GuidedMatchLists.o: GuidedMatchLists.cpp ../base/Reader.cpp ../base/Reader.h ../base/Bundle.cpp ../base/Bundle.h ../base/Gridder.cpp ../base/Gridder.h ../base/defs.h ../base/Geometric.cpp ../base/Geometric.h ../base/Matcher.cpp ../base/Matcher.h ../base/argvparser.cpp ../base/argvparser.h ../base/MatchPairs.cpp ../base/MatchPairs.h
 	$(CC) $(CFLAGS) $(IFLAGS) GuidedMatchLists.cpp
+
+
+compute_reprojection: ComputeReprojectionError.o ../base/argvparser.o ../base/Reader.o ../base/Bundle.o ../base/Triangulater.o
+	$(CC) ComputeReprojectionError.o ../base/argvparser.o ../base/Reader.o ../base/Bundle.o ../base/Triangulater.o $(LIBPATH) -Wall -o compute_reprojection $(LIBS)
 
 triangulate_tracks: TriangulateTracks.o ../base/argvparser.o ../base/Reader.o ../base/Bundle.o ../base/Triangulater.o
 	$(CC) TriangulateTracks.o ../base/argvparser.o ../base/Reader.o ../base/Bundle.o ../base/Triangulater.o $(LIBPATH) -Wall -o triangulate_tracks $(LIBS)
@@ -106,6 +110,9 @@ MakeTracks.o : MakeTracks.cpp
 
 NVM2BDL.o:NVM2BDL.cpp
 	$(CC) $(CFLAGS) $(IFLAGS) NVM2BDL.cpp
+
+ComputeReprojectionError.o: ComputeReprojectionError.cpp 
+	$(CC) $(CFLAGS) $(IFLAGS) ComputeReprojectionError.cpp
 
 TriangulateTracks.o: TriangulateTracks.cpp 
 	$(CC) $(CFLAGS) $(IFLAGS) TriangulateTracks.cpp
