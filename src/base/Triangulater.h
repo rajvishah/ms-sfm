@@ -29,7 +29,7 @@ namespace triang {
 
 
   bool TriangulateTrack(bundle::Bundle* bdl, reader::ImageListReader& imList, 
-        vector<pointstr> &trackDetails, v3_t& ptOut, bool angleVerify); 
+        vector<pointstr> &trackDetails, v3_t& ptOut, bool angleVerify, double* reproErr); 
 
 };
 #endif // __TRIANGULATER_H

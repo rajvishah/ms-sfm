@@ -59,7 +59,7 @@ bool triang::RemoveBadPointsAndCameras(bundle::Bundle* bdl, v3_t point,
         }
     }
 
-    if (RAD2DEG(max_angle) < 1.0) {
+    if (RAD2DEG(max_angle) < 2.0) {
         //		printf("[RemoveBadPointsAndCamera] "
         //				"Removing point with angle %0.3f\n", RAD2DEG(max_angle));
         return false;
@@ -204,7 +204,7 @@ v2_t triang::UndistortNormalizedPoint(v2_t p, double* kinv)  {
 
 
 bool triang::TriangulateTrack(bundle::Bundle* bdl, reader::ImageListReader& imList, 
-        vector<pointstr> &trackDetails, v3_t& ptOut, bool angleVerify) { 
+        vector<pointstr> &trackDetails, v3_t& ptOut, bool angleVerify, double* reproErr) { 
     int tsize = trackDetails.size();
 
     static int tcount = 0;
@@ -335,11 +335,12 @@ bool triang::TriangulateTrack(bundle::Bundle* bdl, reader::ImageListReader& imLi
     }
 
     totalErr = sqrt((totalErr*1.0)/tsize);
+    (*reproErr) = totalErr;
     bool goodness = true;
     //    printf("\n%d error %lf, repError %lf, Cheirality %d", tcount, error, totalErr, status);
     tcount++;
     //printf("Total Error: %lf, Cheirality Status :%d", totalErr, status);
-    if(status && totalErr <= 16.0) {
+    if(status && totalErr <= /*16.0*/ 5.0) {
         if(angleVerify) {
             goodness = RemoveBadPointsAndCameras(bdl, pt2, pt_views);
         }
