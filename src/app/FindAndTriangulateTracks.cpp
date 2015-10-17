@@ -189,8 +189,9 @@ void TriangulateAllTracks(bundle::Bundle* bdl, reader::ImageListReader& imList,
       printf("\nTriangulating track %d / %d", trackId, tracksVec.size());
     vector < pointstr > &track = tracksVec[trackId];
     v3_t point;
+    double reproErr = 0.0;
     triStatus[trackId] = triang::TriangulateTrack(bdl, imList, 
-        track, point, angleVerify);
+        track, point, angleVerify, &reproErr);
     triPoints[trackId] = point;
   }
   int numProcs = omp_get_num_procs();
