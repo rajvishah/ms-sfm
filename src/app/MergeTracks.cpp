@@ -494,7 +494,12 @@ int main(int argc, char* argv[]) {
     }
 
     printf("[DEBUG] Finding connected components\n");
+    int graphSize = my_map.size();
+    int nodeCtr = 0;
     for(iter=my_map.begin();iter!=my_map.end();++iter) {
+        nodeCtr++;
+        double progressPercent = (double)(nodeCtr*100.0f)/graphSize*1.0f;
+        printf("\t%.2lf percentage done", progressPercent);
 
         if(visited[iter->first]==0) {
 
