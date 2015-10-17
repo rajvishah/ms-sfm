@@ -58,7 +58,8 @@ int main(int argc, char* argv[]) {
     int imageIdx = atoi( imageIdxStr.c_str() );
 
     FILE* outputFile1 = NULL;
-    char file1[1000], file2[1000], file3[1000];
+    FILE* outputFile2 = NULL;
+    char file1[1000], file2[1000], file3[1000], file4[1000];
 
     bool angleVerify = false;
     if(mode == "merged") {
@@ -68,9 +69,16 @@ int main(int argc, char* argv[]) {
                 trackDir.c_str());
         sprintf(file3, "%s/bundle-triangulated_tracks-final.txt", 
                 trackDir.c_str());
+        sprintf(file4, "%s/reprojection-errors-tracks-final.txt", 
+                trackDir.c_str());
         
         outputFile1 = fopen(file3, "w");
         if(outputFile1 == NULL) {
+            printf("\nOutput1 file could not be created");
+            return -1;
+        }
+        outputFile2 = fopen(file4, "w");
+        if(outputFile2 == NULL) {
             printf("\nOutput1 file could not be created");
             return -1;
         }
@@ -134,9 +142,10 @@ int main(int argc, char* argv[]) {
         v3_t point;
         clock_t start = clock();
         bool status = false;
+        double reproErr = 0;
         if(track.size() > 1) {
           initialTrackCount++;
-          status = triang::TriangulateTrack(&bdl, imList, track, point,angleVerify);
+          status = triang::TriangulateTrack(&bdl, imList, track, point,angleVerify, &reproErr);
         }
         clock_t end = clock();
 
@@ -155,6 +164,7 @@ int main(int argc, char* argv[]) {
                     fprintf(outputFile1, " %lf", track[i].ycord);    
                 }
                 fprintf(outputFile1,"\n");
+                fprintf(outputFile2,"%lf\n", reproErr);
             }
             fprintf(outputFile, "%d", track.size());
             for(int i=0; i < track.size(); i++) {
